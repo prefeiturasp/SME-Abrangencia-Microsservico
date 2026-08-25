@@ -1,0 +1,21 @@
+services:
+  abrangencia:
+    platform: linux/amd64
+
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+
+    volumes:
+      - .:/app
+
+    env_file:
+      - .env
+
+    command: python manage.py runserver 0.0.0.0:${PORT_WEB:-8003}
+
+    ports:
+      - "${PORT_WEB:-8003}:${PORT_WEB:-8003}"
+      - "${PORT_DEBUGPY:-5680}:${PORT_DEBUGPY:-5680}"
+
+    restart: unless-stopped
