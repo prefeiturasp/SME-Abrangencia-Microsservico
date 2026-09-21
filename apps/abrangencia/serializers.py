@@ -1,11 +1,6 @@
-"""Serializers do domínio Abrangência.
+"""Serializers do domínio Abrangência."""
 
-As chaves saem em camelCase porque são contrato externo, não escolha de
-estilo. `allow_null=True` é explícito em toda coleção de escopo: `null` e
-`[]` são valores distintos do contrato, e a escolha depende do ramo do
-perfil consultado.
-"""
-
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework import serializers
 
 
@@ -25,11 +20,7 @@ class GrupoCargosSerializer(serializers.Serializer):
 
 
 class DreExpandidaSerializer(serializers.Serializer):
-    """Representa uma DRE da coleção expandida de sondagem.
-
-    `nomeDRE` e `siglaDRE` saem sempre `null`: este serviço guarda apenas
-    o código, que é o que decide abrangência.
-    """
+    """Representa detalhes da DRE."""
 
     codigoDRE = serializers.CharField(allow_null=True)  # noqa: N815
     nomeDRE = serializers.CharField(allow_null=True)  # noqa: N815
@@ -37,11 +28,7 @@ class DreExpandidaSerializer(serializers.Serializer):
 
 
 class UeExpandidaSerializer(serializers.Serializer):
-    """Representa uma UE da coleção expandida de sondagem.
-
-    `codigoDRE`, `nome` e `sigla` saem sempre `null`: este serviço guarda
-    apenas o código.
-    """
+    """Representa detalhes da UE."""
 
     codigo = serializers.CharField(allow_null=True)
     codigoDRE = serializers.CharField(allow_null=True)  # noqa: N815
@@ -50,11 +37,7 @@ class UeExpandidaSerializer(serializers.Serializer):
 
 
 class TurmaExpandidaSerializer(serializers.Serializer):
-    """Representa uma turma da coleção expandida de sondagem.
-
-    `codigo` é emitido como texto, embora o contrato o declare numérico:
-    convertê-lo perderia zeros à esquerda.
-    """
+    """Representa detalhes da turma."""
 
     codigo = serializers.CharField(allow_null=True)
     nome = serializers.CharField(allow_null=True)
@@ -62,12 +45,7 @@ class TurmaExpandidaSerializer(serializers.Serializer):
 
 
 class AbrangenciaCompactaSerializer(serializers.Serializer):
-    """Representa o escopo de um usuário em um perfil.
-
-    As oito chaves estão sempre presentes. O nível que o ramo não resolve sai
-    `null` ou `[]` conforme o ramo, e as coleções expandidas só se preenchem
-    quando explicitamente solicitadas (endpoint de sondagem).
-    """
+    """Representa o escopo de um usuário em um perfil."""
 
     login = serializers.CharField()
     abrangencia = GrupoCargosSerializer(allow_null=True)
@@ -76,7 +54,7 @@ class AbrangenciaCompactaSerializer(serializers.Serializer):
     )
     dres = DreExpandidaSerializer(many=True, allow_null=True)
     idUes = serializers.ListField(  # noqa: N815
-        child=serializers.CharField(), allow_null=True
+        child=serializers.CharField(allow_null=True), allow_null=True
     )
     ues = UeExpandidaSerializer(many=True, allow_null=True)
     idTurmas = serializers.ListField(  # noqa: N815
@@ -93,21 +71,27 @@ class PerfilAbrangenciaSerializer(serializers.Serializer):
 
 
 class UsuarioPerfilsAbrangenciaSerializer(serializers.Serializer):
-    """Representa um usuário e seus perfis na UE consultada.
-
-    `perfils`, sem o `i`, é a grafia mantida pelo contrato consumido pelos
-    sistemas integrados — corrigi-la quebraria quem já consome esta API.
-    """
+    """Representa um usuário e seus perfis na UE consultada."""
 
     usuarioRf = serializers.CharField()  # noqa: N815
     perfils = PerfilAbrangenciaSerializer(many=True)
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            "Payload legado",
+            value={
+                "ue": "string",
+                "dre": "string",
+                "perfis": ["string"],
+            },
+            request_only=True,
+        )
+    ]
+)
 class BuscarUsuariosPerfisSerializer(serializers.Serializer):
-    """Valida o corpo da busca de usuários por perfil.
-
-    `ue` e `perfis` são obrigatórios; `dre` é opcional.
-    """
+    """Valida o corpo da busca de usuários por perfil."""
 
     ue = serializers.CharField()
     dre = serializers.CharField(
