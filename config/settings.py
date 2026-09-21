@@ -142,8 +142,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "SME-Abrangencia-Microsservico API",
     "DESCRIPTION": (
-        "Abrangência territorial de perfil (CoreSSO): DREs, UEs e turmas "
-        "que cada perfil de sistema alcança."
+        "Microsserviço de abrangência dos perfis em DREs, UEs e turmas."
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
