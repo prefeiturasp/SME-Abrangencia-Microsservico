@@ -4,11 +4,13 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 
-API_PREFIX = "abrangencia/api/v1/"
+API_PREFIX = "api/abrangencia/"
+
+DOCS_PREFIX = "abrangencia/api/v1/docs/"
 
 urlpatterns = [
     path(
-        f"{API_PREFIX}schema/",
+        f"{DOCS_PREFIX}schema/",
         SpectacularAPIView.as_view(
             authentication_classes=[],
             permission_classes=[AllowAny],
@@ -16,7 +18,7 @@ urlpatterns = [
         name="schema",
     ),
     path(
-        f"{API_PREFIX}docs/",
+        DOCS_PREFIX,
         SpectacularSwaggerView.as_view(
             url_name="schema",
             authentication_classes=[],

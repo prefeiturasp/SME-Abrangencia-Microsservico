@@ -1,15 +1,16 @@
 """Testes dos modelos de leitura do domínio Abrangência."""
 
-from django.db import models
 from django.test import TestCase
 
 from apps.abrangencia.models import (
-    AbrangenciaCompacta,
-    ArrayDeTexto,
+    AbrangenciaResolvida,
     Perfil,
     PerfilVinculoFuncional,
-    UsuarioAbrangencia,
+    Unidade,
+    UsuarioPorPerfil,
 )
+
+_PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
 
 
 class TestModelosNaoGerenciados(TestCase):
@@ -28,60 +29,68 @@ class TestModelosNaoGerenciados(TestCase):
             "perfil_vinculo_funcional",
         )
 
-    def test_usuario_abrangencia_nao_e_gerenciado(self) -> None:
-        """`UsuarioAbrangencia` também é somente leitura."""
-        self.assertFalse(UsuarioAbrangencia._meta.managed)
+    def test_abrangencia_resolvida_le_a_mv_de_escopo(self) -> None:
+        """`AbrangenciaResolvida` lê a MV."""
+        self.assertFalse(AbrangenciaResolvida._meta.managed)
         self.assertEqual(
-            UsuarioAbrangencia._meta.db_table, "usuario_abrangencia"
+            AbrangenciaResolvida._meta.db_table, "mv_abrangencia_resolvida"
         )
 
-    def test_abrangencia_compacta_nao_e_gerenciada(self) -> None:
-        """`AbrangenciaCompacta` lê a materialized view, não uma tabela."""
-        self.assertFalse(AbrangenciaCompacta._meta.managed)
+    def test_unidade_le_a_mv_de_unidade(self) -> None:
+        """`Unidade` lê `mv_abrangencia_unidade`, não a tabela de origem."""
+        self.assertFalse(Unidade._meta.managed)
+        self.assertEqual(Unidade._meta.db_table, "mv_abrangencia_unidade")
+
+    def test_usuario_por_perfil_le_a_mv_de_usuarios(self) -> None:
+        """`UsuarioPorPerfil` lê a MV."""
+        self.assertFalse(UsuarioPorPerfil._meta.managed)
         self.assertEqual(
-            AbrangenciaCompacta._meta.db_table, "mv_abrangencia_compacta"
+            UsuarioPorPerfil._meta.db_table, "mv_abrangencia_usuarios_perfil"
         )
 
 
-class TestArrayDeTexto(TestCase):
-    """Testes de `ArrayDeTexto` fora do PostgreSQL (suíte roda em SQLite)."""
+class TestRepresentacaoDosModelos(TestCase):
+    """Testes de `__str__` dos models."""
 
-    def setUp(self) -> None:
-        """Cria o campo isolado do model, para testar a conversão."""
-        self.campo = ArrayDeTexto(models.TextField())
+    def test_perfil(self) -> None:
+        """Perfil exibe GUID e nome."""
+        perfil = Perfil(perfil_guid=_PERFIL_GUID, nome="CP")
 
-    def test_db_type_fora_do_postgres_e_text(self) -> None:
-        """Sem tipo array nativo, a coluna vira `text`."""
-        self.assertEqual(self.campo.db_type(connection=None), "text")
+        self.assertEqual(str(perfil), f"{_PERFIL_GUID} - CP")
 
-    def test_from_db_value_decodifica_json(self) -> None:
-        """Lista serializada em JSON volta como lista de strings."""
-        resultado = self.campo.from_db_value(
-            '["019331", "094811"]', connection=None
+    def test_perfil_vinculo_funcional(self) -> None:
+        """Vínculo exibe perfil, tipo e código."""
+        vinculo = PerfilVinculoFuncional(
+            perfil_guid=_PERFIL_GUID, tipo="CARGO", codigo=1
         )
 
-        self.assertEqual(resultado, ["019331", "094811"])
+        self.assertEqual(str(vinculo), f"{_PERFIL_GUID} - CARGO - 1")
 
-    def test_from_db_value_none_permanece_none(self) -> None:
-        """Valor nulo permanece `None`, não vira lista vazia."""
-        self.assertIsNone(self.campo.from_db_value(None, connection=None))
-
-    def test_from_db_value_lista_ja_pronta_e_preservada(self) -> None:
-        """Uma lista já materializada não é reprocessada."""
-        entrada = ["019331"]
-
-        self.assertIs(
-            self.campo.from_db_value(entrada, connection=None), entrada
+    def test_abrangencia_resolvida(self) -> None:
+        """Escopo exibe login, perfil e resolução."""
+        escopo = AbrangenciaResolvida(
+            login="5059151",
+            perfil_guid=_PERFIL_GUID,
+            tipo_resolucao="COMPACTA",
+            tipo_escopo="UE",
         )
 
-    def test_get_db_prep_value_serializa_lista_em_json(self) -> None:
-        """Lista vira texto JSON antes de ser gravada fora do Postgres."""
-        resultado = self.campo.get_db_prep_value(
-            ["019331", "094811"], connection=None
+        self.assertEqual(
+            str(escopo), f"5059151 - {_PERFIL_GUID} - COMPACTA/UE"
         )
 
-        self.assertEqual(resultado, '["019331", "094811"]')
+    def test_unidade(self) -> None:
+        """Unidade exibe ano, tipo e código."""
+        unidade = Unidade(ano_letivo=2026, tipo_escopo="UE", codigo="019331")
 
-    def test_get_db_prep_value_none_permanece_none(self) -> None:
-        """Valor nulo não é serializado."""
-        self.assertIsNone(self.campo.get_db_prep_value(None, connection=None))
+        self.assertEqual(str(unidade), "2026 - UE - 019331")
+
+    def test_usuario_por_perfil(self) -> None:
+        """Usuário por perfil exibe usuário, perfil e UE."""
+        usuario = UsuarioPorPerfil(
+            usuario_rf="5059151",
+            perfil_guid=_PERFIL_GUID,
+            ue_codigo="019331",
+        )
+
+        self.assertEqual(str(usuario), f"5059151 - {_PERFIL_GUID} - 019331")

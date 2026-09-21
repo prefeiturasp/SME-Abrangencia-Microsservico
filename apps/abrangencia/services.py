@@ -1,97 +1,116 @@
-"""Serviços do domínio Abrangência."""
+"""Servicos do dominio Abrangencia."""
 
+from collections.abc import Mapping
 from typing import Any
 
 from django.conf import settings
 
 from apps.abrangencia.constants import (
-    GRUPO_PROFESSOR_READAPTADO,
-    ORIGENS_LOTACAO,
-    PERFIS_POA,
+    GRUPO_COMUNICADOS_UE,
+    ORIGENS_UE_POR_EXERCICIO,
+    TIPO_ESCOPO_DRE,
+    TIPO_ESCOPO_TURMA,
+    TIPO_ESCOPO_UE,
+    TIPO_RESOLUCAO_COMPACTA,
+    TIPO_RESOLUCAO_DETALHES,
     TipoAbrangencia,
 )
 from apps.abrangencia.models import (
-    AbrangenciaCompacta,
+    AbrangenciaResolvida,
     Perfil,
     PerfilVinculoFuncional,
-    UsuarioAbrangencia,
+    Unidade,
+    UsuarioPorPerfil,
 )
 
-# Nível fora do conjunto do ramo é zerado. `DRE_ESCOLAS_ATRIBUIDAS` fica
-# de fora de propósito: sem entrada aqui, os três níveis saem zerados.
-ESCOPO_POR_ABRANGENCIA: dict[int, frozenset[str]] = {
-    TipoAbrangencia.UE: frozenset({"idUes"}),
-    TipoAbrangencia.PROFESSOR: frozenset({"idTurmas"}),
-    TipoAbrangencia.UE_TURMAS_DISCIPLINAS: frozenset({"idUes"}),
-    TipoAbrangencia.DRE: frozenset({"idDres"}),
+_NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA: dict[int, frozenset[str]] = {
+    TipoAbrangencia.PROFESSOR: frozenset({"idDres", "idUes", "idTurmas"}),
     TipoAbrangencia.SME: frozenset({"idDres", "idUes", "idTurmas"}),
+    TipoAbrangencia.UE: frozenset({"idUes"}),
+    TipoAbrangencia.UE_TURMAS_DISCIPLINAS: frozenset({"idUes"}),
+    TipoAbrangencia.DRE: frozenset(),
+    TipoAbrangencia.DRE_ESCOLAS_ATRIBUIDAS: frozenset(),
 }
 
-# Difere de ESCOPO_POR_ABRANGENCIA só em UE_TURMAS_DISCIPLINAS: aqui o
-# ramo preenche idTurmas em vez de idUes.
-ESCOPO_POR_ABRANGENCIA_ALTERNATIVO: dict[int, frozenset[str]] = {
-    **ESCOPO_POR_ABRANGENCIA,
+_NIVEIS_VAZIOS_DRE_NAO_MANUAL = frozenset({"idDres"})
+
+_ORIGEM_CONTRATO_EXTERNO = "CONTRATO_EXTERNO"
+
+
+_NIVEIS_VAZIOS_DETALHES: dict[int, frozenset[str]] = {
+    TipoAbrangencia.PROFESSOR: frozenset({"idTurmas"}),
+    TipoAbrangencia.SME: frozenset({"idDres"}),
+    TipoAbrangencia.UE: frozenset({"idUes"}),
     TipoAbrangencia.UE_TURMAS_DISCIPLINAS: frozenset({"idTurmas"}),
+    TipoAbrangencia.DRE: frozenset({"idDres"}),
+    TipoAbrangencia.DRE_ESCOLAS_ATRIBUIDAS: frozenset({"idUes"}),
 }
 
-# Ramos cujo nível não resolvido vira `[]` em vez de `None`.
-RAMOS_COM_ENTIDADE_VIGENTE: frozenset[int] = frozenset(
-    {TipoAbrangencia.PROFESSOR, TipoAbrangencia.SME}
+
+_TIPOS_ABRANGENCIA_DRE_DE_ID_DRES = frozenset(
+    {TipoAbrangencia.DRE, TipoAbrangencia.SME}
+)
+_TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE = frozenset(
+    {TipoAbrangencia.UE, TipoAbrangencia.DRE_ESCOLAS_ATRIBUIDAS}
+)
+_TIPOS_ABRANGENCIA_QUE_EXPANDEM_UE = _TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE
+_TIPOS_ABRANGENCIA_QUE_EXPANDEM_TURMA = frozenset(
+    {TipoAbrangencia.PROFESSOR, TipoAbrangencia.UE_TURMAS_DISCIPLINAS}
 )
 
-# Ramos em que a coleção expandida de DREs deriva das UEs detalhadas, e não
-# diretamente de `id_dres`.
-_RAMOS_DRE_DERIVADA_DE_UE = frozenset(
-    {TipoAbrangencia.UE, TipoAbrangencia.UE_TURMAS_DISCIPLINAS}
+_TIPOS_ABRANGENCIA_QUE_EXPANDEM_DRE = (
+    _TIPOS_ABRANGENCIA_DRE_DE_ID_DRES | _TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE
 )
 
-# Traz as colunas dos dois algoritmos (padrão e `_alternativo`); qual
-# delas é usada se decide em `_escopo_bruto`.
-_CAMPOS_ESCOPO = (
-    "id_dres",
-    "id_ues",
-    "id_turmas",
-    "tipo_abrangencia",
-    "id_ues_exercicio",
-    "id_turmas_poa",
-    "id_ues_alternativo",
-    "id_turmas_alternativo",
-    "grupo_codigo",
-    "id_ues_readaptado",
-    "id_ues_detalhaveis",
-)
+
+_ESCOPO_POR_TIPO: dict[str, tuple[str, int]] = {
+    TIPO_ESCOPO_DRE: ("idDres", 0),
+    TIPO_ESCOPO_UE: ("idUes", 1),
+    TIPO_ESCOPO_TURMA: ("idTurmas", 2),
+}
 
 _TIPO_CARGO = "CARGO"
 _TIPO_FUNCAO_ATIVIDADE = "FUNCAO_ATIVIDADE"
 
+Codigos = list[str | None]
 
-def _lista(valor: list[str] | None) -> list[str]:
-    """Normaliza array da MV em lista, tratando NULL como vazio.
+
+def _sem_nulos(codigos: Codigos) -> list[str]:
+    """Descarta o codigo nulo, que so `idUes` carrega.
 
     Args:
-        valor: Array lido da MV, ou None.
+        codigos: Codigos de um nivel do escopo.
 
     Returns:
-        A lista original, ou lista vazia quando `valor` é None.
+        Os mesmos codigos, sem o nulo.
     """
-    return list(valor or [])
+    return [codigo for codigo in codigos if codigo is not None]
 
 
 class AbrangenciaService:
-    """Serviço responsável pelas operações do domínio Abrangência."""
+    """Servico responsavel pelas operacoes do dominio Abrangencia."""
 
-    def grupo_cargos(self, perfil_guid: str) -> dict | None:
-        """Monta o payload de perfil com seus cargos e funções.
-
-        Ponto único de montagem, reaproveitado por `abrangencia_compacta`.
+    def grupo_cargos(
+        self,
+        perfil_guid: str,
+        *,
+        funcao_exige_cargo: bool = True,
+        eh_grupo_manual: bool = True,
+    ) -> dict | None:
+        """Monta o payload de perfil com seus cargos e funcoes.
 
         Args:
             perfil_guid: GUID do perfil consultado.
+            funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai
+                sem funcao  ver `_perfil_com_vinculos`.
+            eh_grupo_manual: Informa se o grupo do perfil e manual.
 
         Returns:
-            Payload do perfil, ou None quando ele não existe.
+            Payload do perfil, ou None quando ele nao existe.
         """
-        perfil = self._perfil_com_vinculos(perfil_guid)
+        perfil = self._perfil_com_vinculos(
+            perfil_guid, funcao_exige_cargo=funcao_exige_cargo
+        )
         if perfil is None:
             return None
         return {
@@ -100,80 +119,10 @@ class AbrangenciaService:
             "funcoesId": perfil["funcoes"],
             "grupo": perfil["grupo_codigo"],
             "abrangencia": perfil["tipo_abrangencia"],
-            "ehPerfilManual": bool(perfil["eh_perfil_manual"]),
+            "ehPerfilManual": self._manual_do_perfil(
+                perfil, eh_grupo_manual=eh_grupo_manual
+            ),
         }
-
-    def projetar_escopo(
-        self,
-        tipo_abrangencia: int | None,
-        perfil_guid: str,
-        id_dres: list[str],
-        id_ues: list[str],
-        id_turmas: list[str],
-        id_turmas_poa: list[str] | None = None,
-        *,
-        algoritmo_alternativo: bool = False,
-    ) -> dict[str, list[str] | None]:
-        """Projeta o escopo agregado da MV no ramo do perfil.
-
-        Cada perfil só enxerga o subconjunto de níveis do seu
-        `TipoAbrangencia`; servir o agregado bruto daria acesso a mais
-        do que o perfil tem.
-
-        Args:
-            tipo_abrangencia: Ramo do perfil.
-            perfil_guid: GUID do perfil, para a exceção dos perfis POA.
-            id_dres: DREs agregadas na MV.
-            id_ues: UEs agregadas na MV.
-            id_turmas: Turmas agregadas na MV.
-            id_turmas_poa: Turmas da origem POA, usadas só na exceção dos
-                perfis POA no ramo UE.
-            algoritmo_alternativo: Usa a projeção alternativa, em que o
-                ramo `UE_TURMAS_DISCIPLINAS` resolve turma em vez de UE.
-
-        Returns:
-            `idDres`, `idUes` e `idTurmas` projetados. O nível não
-            resolvido sai `[]` para Professor e SME, `None` nos demais.
-        """
-        mapa = (
-            ESCOPO_POR_ABRANGENCIA_ALTERNATIVO
-            if algoritmo_alternativo
-            else ESCOPO_POR_ABRANGENCIA
-        )
-        preenchidos: frozenset[str] = (
-            frozenset()
-            if tipo_abrangencia is None
-            else mapa.get(tipo_abrangencia, frozenset())
-        )
-        vazio: list[str] | None = (
-            [] if tipo_abrangencia in RAMOS_COM_ENTIDADE_VIGENTE else None
-        )
-
-        disponiveis: dict[str, list[str]] = {
-            "idDres": id_dres,
-            "idUes": id_ues,
-            "idTurmas": id_turmas,
-        }
-        escopo: dict[str, list[str] | None] = {
-            campo: valor if campo in preenchidos else vazio
-            for campo, valor in disponiveis.items()
-        }
-
-        # Perfis POA no ramo UE preenchem idTurmas só pela origem POA;
-        # id_turmas agrega outras origens e traria turmas fora do
-        # alcance do perfil. Vale só para o algoritmo padrão.
-        if (
-            not algoritmo_alternativo
-            and tipo_abrangencia
-            in (
-                TipoAbrangencia.UE,
-                TipoAbrangencia.UE_TURMAS_DISCIPLINAS,
-            )
-            and perfil_guid.lower() in PERFIS_POA
-        ):
-            escopo["idTurmas"] = list(id_turmas_poa or [])
-
-        return escopo
 
     def abrangencia_compacta(
         self,
@@ -186,55 +135,63 @@ class AbrangenciaService:
         expandir_turmas: bool = False,
         algoritmo_alternativo: bool = False,
     ) -> dict[str, Any]:
-        """Monta o payload de escopo compacto de um usuário em um perfil.
-
-        Ponto único de montagem para os quatro endpoints de escopo
-        compacto, que diferem só em quais coleções expandem e em qual
-        algoritmo usam.
+        """Monta o payload de escopo compacto de um usuario em um perfil.
 
         Args:
-            login: RF ou CPF do usuário.
+            login: RF ou CPF do usuario.
             perfil_guid: GUID do perfil consultado.
             ano_letivo: Ano letivo; None usa `ABRANGENCIA_ANO_LETIVO`.
             expandir_dres: Preenche `dres`.
             expandir_ues: Preenche `ues`.
             expandir_turmas: Preenche `turmas`, restritas a sondagem.
-            algoritmo_alternativo: Lê o escopo pelo algoritmo alternativo
-                de agregação, em vez do padrão.
+            algoritmo_alternativo: Le as linhas de `tipo_resolucao`
+                `DETALHES` em vez das de `COMPACTA`.
 
         Returns:
             Payload com as oito chaves do contrato, sempre presentes.
-            Campo não expandido sai `None`, nunca `[]`.
+            Campo nao expandido sai `None`, nunca `[]`.
         """
         ano = ano_letivo if ano_letivo is not None else self._ano_letivo()
-        linha = self._escopo_compacto(login, perfil_guid, ano)
-
-        escopo_bruto = self._escopo_bruto(
-            linha, algoritmo_alternativo=algoritmo_alternativo
+        tipo_resolucao = (
+            TIPO_RESOLUCAO_DETALHES
+            if algoritmo_alternativo
+            else TIPO_RESOLUCAO_COMPACTA
         )
-
-        # Sem linha na MV o usuário não tem escopo, mas o tipo de
-        # abrangência do perfil ainda decide se os campos saem `[]` ou
-        # `None` — por isso vem do perfil quando a MV não o fornece.
-        tipo_abrangencia = (
-            linha["tipo_abrangencia"]
-            if linha is not None
-            else self._tipo_abrangencia_do_perfil(perfil_guid)
-        )
-
-        escopo = self.projetar_escopo(
+        (
             tipo_abrangencia,
-            perfil_guid,
-            escopo_bruto["id_dres"],
-            escopo_bruto["id_ues"],
-            escopo_bruto["id_turmas"],
-            escopo_bruto["id_turmas_poa"],
+            eh_perfil_manual,
+            grupo_codigo,
+        ) = self._tipo_abrangencia_do_perfil(perfil_guid)
+        codigos = self._escopo_resolvido(
+            login, perfil_guid, ano, tipo_resolucao
+        )
+        if tipo_abrangencia == TipoAbrangencia.SME and not codigos["idDres"]:
+            dres_da_rede: Codigos = list(self._dres_da_rede(ano))
+            codigos = {**codigos, "idDres": dres_da_rede}
+        if algoritmo_alternativo and tipo_abrangencia == TipoAbrangencia.DRE:
+            codigos = self._limitar_dre_unica(codigos)
+
+        de_contrato_externo = (
+            not algoritmo_alternativo
+            and tipo_abrangencia == TipoAbrangencia.UE_TURMAS_DISCIPLINAS
+            and self._escopo_veio_de_contrato_externo(login, perfil_guid, ano)
+        )
+        escopo = self._aplicar_nivel_vazio(
+            codigos,
+            tipo_abrangencia,
             algoritmo_alternativo=algoritmo_alternativo,
+            escopo_de_contrato_externo=de_contrato_externo,
+            eh_perfil_manual=eh_perfil_manual,
+            grupo_codigo=grupo_codigo,
         )
 
         payload: dict[str, Any] = {
             "login": login,
-            "abrangencia": self.grupo_cargos(perfil_guid),
+            "abrangencia": self.grupo_cargos(
+                perfil_guid,
+                funcao_exige_cargo=algoritmo_alternativo,
+                eh_grupo_manual=algoritmo_alternativo,
+            ),
             "idDres": escopo["idDres"],
             "dres": None,
             "idUes": escopo["idUes"],
@@ -243,21 +200,38 @@ class AbrangenciaService:
             "turmas": None,
         }
 
-        # As coleções expandidas vêm do escopo bruto, não do já
-        # projetado — por isso um identificador pode sair `null` e sua
-        # coleção expandida vir preenchida no mesmo payload.
-        id_ues_detalhaveis = escopo_bruto["id_ues_detalhaveis"]
-        if expandir_ues:
-            payload["ues"] = self._expandir_ues(id_ues_detalhaveis)
-        if expandir_dres:
-            payload["dres"] = self._expandir_dres(
-                escopo_bruto["id_dres"],
-                id_ues_detalhaveis,
-                tipo_abrangencia,
-                expandir_ues=expandir_ues,
+        ues_expandidas: list[dict] = []
+        if (
+            expandir_ues
+            and tipo_abrangencia in _TIPOS_ABRANGENCIA_QUE_EXPANDEM_UE
+        ):
+            ues_expandidas = self._expandir_ues(codigos["idUes"], ano)
+            payload["ues"] = ues_expandidas
+        elif (
+            expandir_ues
+            and tipo_abrangencia in _TIPOS_ABRANGENCIA_DRE_DE_ID_DRES
+        ):
+            ues_expandidas = self._expandir_ues_da_dre(
+                _sem_nulos(codigos["idDres"]), tipo_abrangencia, ano
             )
-        if expandir_turmas:
-            payload["turmas"] = self._expandir_turmas(login, perfil_guid, ano)
+            payload["ues"] = ues_expandidas
+        if (
+            expandir_dres
+            and tipo_abrangencia in _TIPOS_ABRANGENCIA_QUE_EXPANDEM_DRE
+        ):
+            payload["dres"] = self._expandir_dres(
+                _sem_nulos(codigos["idDres"]),
+                ues_expandidas,
+                tipo_abrangencia,
+                ano,
+            )
+        if (
+            expandir_turmas
+            and tipo_abrangencia in _TIPOS_ABRANGENCIA_QUE_EXPANDEM_TURMA
+        ):
+            payload["turmas"] = self._expandir_turmas(
+                _sem_nulos(codigos["idTurmas"]), ano
+            )
 
         return payload
 
@@ -267,15 +241,15 @@ class AbrangenciaService:
         dre: str | None,
         perfis: list[str],
     ) -> list[dict[str, Any]]:
-        """Lista os usuários lotados na UE, agrupados por login.
+        """Lista os usuarios lotados na UE, agrupados por login.
 
         Args:
-            ue: Código da unidade educacional.
-            dre: Código da DRE; None não filtra.
+            ue: Codigo da unidade educacional.
+            dre: Codigo da DRE; None nao filtra.
             perfis: GUIDs dos perfis consultados.
 
         Returns:
-            Um registro por usuário. A chave `perfils` (sem o "i") segue
+            Um registro por usuario. A chave `perfils` (sem o "i") segue
             a grafia do contrato consumido pelos sistemas integrados.
         """
         usuarios: dict[str, dict[str, Any]] = {}
@@ -300,139 +274,406 @@ class AbrangenciaService:
         """
         return int(settings.ABRANGENCIA_ANO_LETIVO)
 
-    def _escopo_bruto(
+    def _aplicar_nivel_vazio(
         self,
-        linha: dict | None,
+        codigos: dict[str, Codigos],
+        tipo_abrangencia: int | None,
         *,
         algoritmo_alternativo: bool,
-    ) -> dict[str, list[str]]:
-        """Seleciona as colunas de escopo do algoritmo pedido.
+        escopo_de_contrato_externo: bool = False,
+        eh_perfil_manual: bool = False,
+        grupo_codigo: int | None = None,
+    ) -> dict[str, Codigos | None]:
+        """Decide quais niveis o tipo de abrangencia projeta.
 
         Args:
-            linha: Escopo bruto da MV, ou None quando o usuário não tem
-                linha.
-            algoritmo_alternativo: Lê as colunas `_alternativo`.
+            codigos: Codigos lidos da MV, por chave do payload.
+            tipo_abrangencia: Tipo de abrangencia do perfil.
+            algoritmo_alternativo: tipo_resolucao `DETALHES` e ignora
+                o nivel de abrangencia que o perfil nao preenche.
+            escopo_de_contrato_externo: Escopo resolvido pelo contrato
+                externo, que nao chega a consulta de turmas do POA.
+            eh_perfil_manual: Flag agregado do perfil.
+            grupo_codigo: Codigo do grupo do perfil.
 
         Returns:
-            As listas de escopo a projetar, mais as UEs detalháveis para
-            expansão.
+            Os tres niveis do payload, usando `[]` ou `None` conforme o
+            tipo de abrangencia.
         """
-        if linha is None:
+        mapa = (
+            _NIVEIS_VAZIOS_DETALHES
+            if algoritmo_alternativo
+            else _NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA
+        )
+        vazios: frozenset[str] = (
+            frozenset()
+            if tipo_abrangencia is None
+            else mapa.get(tipo_abrangencia, frozenset())
+        )
+        if (
+            not algoritmo_alternativo
+            and tipo_abrangencia == TipoAbrangencia.UE_TURMAS_DISCIPLINAS
+            and not escopo_de_contrato_externo
+        ):
+            vazios = vazios | {"idTurmas"}
+        if (
+            not algoritmo_alternativo
+            and tipo_abrangencia == TipoAbrangencia.DRE
+            and not eh_perfil_manual
+        ):
+            vazios = vazios | _NIVEIS_VAZIOS_DRE_NAO_MANUAL
+        if (
+            not algoritmo_alternativo
+            and not escopo_de_contrato_externo
+            and self._e07_ue_mantem_nulo(
+                tipo_abrangencia,
+                eh_perfil_manual=eh_perfil_manual,
+                grupo_codigo=grupo_codigo,
+            )
+        ):
+            vazios = vazios - {"idUes"}
+
+        if algoritmo_alternativo and tipo_abrangencia is not None:
             return {
-                "id_dres": [],
-                "id_ues": [],
-                "id_turmas": [],
-                "id_turmas_poa": [],
-                "id_ues_detalhaveis": [],
+                chave: (valor or []) if chave in vazios else None
+                for chave, valor in codigos.items()
             }
 
-        id_ues = linha["id_ues"]
-        id_turmas = linha["id_turmas"]
-
-        if algoritmo_alternativo:
-            id_ues = linha["id_ues_alternativo"]
-            id_turmas = linha["id_turmas_alternativo"]
-
-            # É o grupo, não o TipoAbrangencia, que decide este desvio.
-            if linha["grupo_codigo"] == GRUPO_PROFESSOR_READAPTADO:
-                id_ues = linha["id_ues_readaptado"]
-                id_turmas = []
-
         return {
-            "id_dres": linha["id_dres"],
-            "id_ues": id_ues,
-            "id_turmas": id_turmas,
-            "id_turmas_poa": linha["id_turmas_poa"],
-            "id_ues_detalhaveis": linha["id_ues_detalhaveis"],
+            chave: valor if valor else ([] if chave in vazios else None)
+            for chave, valor in codigos.items()
         }
 
-    def _expandir_ues(self, id_ues_detalhaveis: list[str]) -> list[dict]:
-        """Monta a coleção expandida de UEs.
+    def _e07_ue_mantem_nulo(
+        self,
+        tipo_abrangencia: int | None,
+        *,
+        eh_perfil_manual: bool,
+        grupo_codigo: int | None,
+    ) -> bool:
+        """Informa se `idUes` vazio sai `null` no tipo de abrangencia UE.
 
         Args:
-            id_ues_detalhaveis: UEs elegíveis para detalhamento.
+            tipo_abrangencia: Abrangencia do perfil.
+            eh_perfil_manual: Flag agregado do perfil.
+            grupo_codigo: Grupo do perfil, que a guarda de 241 cita.
 
         Returns:
-            Uma entrada por UE, com `nome`/`sigla`/`codigoDRE` sempre
-            `None` — este serviço guarda só o código.
+            Verdadeiro quando o tipo de abrangencia e o grupo mantem
+            o `null` de 233.
         """
+        if tipo_abrangencia not in (
+            TipoAbrangencia.UE,
+            TipoAbrangencia.UE_TURMAS_DISCIPLINAS,
+        ):
+            return False
+        return eh_perfil_manual or grupo_codigo == GRUPO_COMUNICADOS_UE
+
+    def _limitar_dre_unica(
+        self,
+        codigos: dict[str, Codigos],
+    ) -> dict[str, Codigos]:
+        """Reduz `idDres` a uma unica DRE em `DETALHES`.
+
+        Args:
+            codigos: Codigos lidos da MV, por chave do payload.
+
+        Returns:
+            Os mesmos codigos, com `idDres` reduzida a no maximo um.
+        """
+        return {**codigos, "idDres": codigos["idDres"][:1]}
+
+    def _escopo_resolvido(
+        self,
+        login: str,
+        perfil_guid: str,
+        ano_letivo: int,
+        tipo_resolucao: str,
+    ) -> dict[str, Codigos]:
+        """Agrupa as linhas de escopo da MV nas tres listas do payload.
+
+        Args:
+            login: RF ou CPF do usuario.
+            perfil_guid: GUID do perfil consultado.
+            ano_letivo: Ano letivo do escopo.
+            tipo_resolucao: `COMPACTA` ou `DETALHES`.
+
+        Returns:
+            `idDres`, `idUes` e `idTurmas`, cada uma ordenada e sem
+            repeticao. Nivel sem linha na MV sai `[]`.
+        """
+        linhas = AbrangenciaResolvida.objects.filter(
+            login=login,
+            perfil_guid=perfil_guid,
+            ano_letivo=ano_letivo,
+            tipo_resolucao=tipo_resolucao,
+        ).values_list(
+            "tipo_escopo",
+            "dre_codigo",
+            "ue_codigo",
+            "turma_codigo",
+            "origem",
+        )
+
+        acumulado: dict[str, set[str | None]] = {
+            chave: set() for chave, _ in _ESCOPO_POR_TIPO.values()
+        }
+        for tipo_escopo, *valores, origem in linhas:
+            destino = _ESCOPO_POR_TIPO.get(tipo_escopo)
+            if destino is None:
+                continue
+            chave, posicao = destino
+            codigo = valores[posicao]
+            if codigo:
+                acumulado[chave].add(str(codigo))
+            elif (
+                chave == "idUes"
+                and codigo is None
+                and origem in ORIGENS_UE_POR_EXERCICIO
+            ):
+                acumulado[chave].add(None)
+
+        return {
+            chave: self._ordenar_codigos(valor)
+            for chave, valor in acumulado.items()
+        }
+
+    def _ordenar_codigos(self, codigos: set[str | None]) -> Codigos:
+        """Ordena os codigos de um nivel, com o nulo a frente.
+
+        Args:
+            codigos: Codigos do nivel, possivelmente com um nulo.
+
+        Returns:
+            Os codigos ordenados, com o nulo a frente quando houver.
+        """
+        presentes = sorted(codigo for codigo in codigos if codigo is not None)
+        ordenados: Codigos = [*presentes]
+        if None in codigos:
+            ordenados.insert(0, None)
+        return ordenados
+
+    def _dres_da_rede(self, ano_letivo: int) -> list[str]:
+        """Lista as DREs da rede para o tipo SME sem linha na MV.
+
+        Args:
+            ano_letivo: Ano letivo do escopo.
+
+        Returns:
+            Codigos das DREs da rede, ordenados.
+        """
+        return sorted(self._unidades(TIPO_ESCOPO_DRE, None, ano_letivo))
+
+    def _escopo_veio_de_contrato_externo(
+        self,
+        login: str,
+        perfil_guid: str,
+        ano_letivo: int,
+    ) -> bool:
+        """Informa se o escopo compacto veio do contrato externo.
+
+        Args:
+            login: RF ou CPF do usuario.
+            perfil_guid: GUID do perfil consultado.
+            ano_letivo: Ano letivo do escopo.
+
+        Returns:
+            Verdadeiro quando ha linha de contrato externo no escopo
+            compacto do par.
+        """
+        return bool(
+            AbrangenciaResolvida.objects.filter(
+                login=login,
+                perfil_guid=perfil_guid,
+                ano_letivo=ano_letivo,
+                tipo_resolucao=TIPO_RESOLUCAO_COMPACTA,
+                origem=_ORIGEM_CONTRATO_EXTERNO,
+            ).exists()
+        )
+
+    def _unidades(
+        self,
+        tipo_escopo: str,
+        codigos: list[str] | None,
+        ano_letivo: int,
+        *,
+        somente_sondagem: bool = False,
+    ) -> dict[str, Mapping[str, Any]]:
+        """Le nome, sigla e pai das unidades da rede, filtradas ou nao.
+
+        Args:
+            tipo_escopo: `DRE`, `UE` ou `TURMA`.
+            codigos: Codigos a resolver. `None` nao filtra (rede inteira);
+                lista vazia devolve mapa vazio.
+            ano_letivo: Ano letivo do escopo.
+            somente_sondagem: Restringe a unidades elegiveis a sondagem.
+
+        Returns:
+            Mapa `codigo -> atributos`. Codigo sem par na MV simplesmente
+            nao aparece, e e o que faz a expansao se comportar como um
+            LEFT JOIN.
+        """
+        if codigos is not None and not codigos:
+            return {}
+
+        consulta = Unidade.objects.filter(
+            ano_letivo=ano_letivo,
+            tipo_escopo=tipo_escopo,
+        )
+        if codigos is not None:
+            consulta = consulta.filter(codigo__in=codigos)
+        if somente_sondagem:
+            consulta = consulta.filter(elegivel_sondagem=True)
+
+        return {
+            str(linha["codigo"]): linha
+            for linha in consulta.values(
+                "codigo", "nome", "sigla", "dre_codigo_pai", "ue_codigo_pai"
+            )
+        }
+
+    def _expandir_ues(
+        self,
+        id_ues: Codigos,
+        ano_letivo: int,
+    ) -> list[dict]:
+        """Monta a lista expandida de UEs.
+
+        Args:
+            id_ues: UEs do escopo; vazio traz a rede inteira.
+            ano_letivo: Ano letivo do escopo.
+
+        Returns:
+            Uma entrada por UE com par na MV de unidade, ordenada por
+            codigo.
+        """
+        codigos = _sem_nulos(id_ues)
+        unidades = self._unidades(TIPO_ESCOPO_UE, codigos or None, ano_letivo)
         return [
             {
                 "codigo": codigo,
-                "codigoDRE": None,
-                "nome": None,
-                "sigla": None,
+                "codigoDRE": unidades[codigo]["dre_codigo_pai"],
+                "nome": unidades[codigo]["nome"],
+                "sigla": unidades[codigo]["sigla"],
             }
-            for codigo in sorted(id_ues_detalhaveis)
+            for codigo in sorted(unidades)
+        ]
+
+    def _expandir_ues_da_dre(
+        self,
+        id_dres: list[str],
+        tipo_abrangencia: int | None,
+        ano_letivo: int,
+    ) -> list[dict]:
+        """Monta a lista de UEs dos tipos de abrangencia que resolvem DRE.
+
+        Args:
+            id_dres: DREs do escopo, usadas como filtro.
+            tipo_abrangencia: Abrangencia do perfil.
+            ano_letivo: Ano letivo do escopo.
+
+        Returns:
+            Uma entrada por UE da rede cujo pai esta em `id_dres`, ou a
+            rede inteira no tipo de abrangencia SME.
+        """
+        unidades = self._unidades(TIPO_ESCOPO_UE, None, ano_letivo)
+        dres = set(id_dres or ())
+        return [
+            {
+                "codigo": codigo,
+                "codigoDRE": unidades[codigo]["dre_codigo_pai"],
+                "nome": unidades[codigo]["nome"],
+                "sigla": unidades[codigo]["sigla"],
+            }
+            for codigo in sorted(unidades)
+            if tipo_abrangencia == TipoAbrangencia.SME
+            or unidades[codigo]["dre_codigo_pai"] in dres
         ]
 
     def _expandir_dres(
         self,
         id_dres: list[str],
-        id_ues_detalhaveis: list[str],
+        ues_expandidas: list[dict],
         tipo_abrangencia: int | None,
-        *,
-        expandir_ues: bool,
+        ano_letivo: int,
     ) -> list[dict]:
-        """Monta a coleção expandida de DREs.
-
-        Nos ramos de `_RAMOS_DRE_DERIVADA_DE_UE`, sem UE detalhável a
-        coleção sai vazia mesmo havendo DRE em `id_dres`.
+        """Monta a lista expandida de DREs.
 
         Args:
-            id_dres: DREs agregadas na MV.
-            id_ues_detalhaveis: UEs elegíveis para detalhamento.
-            tipo_abrangencia: Ramo do perfil.
-            expandir_ues: Se a expansão de UEs também foi pedida.
+            id_dres: DREs do escopo.
+            ues_expandidas: UEs ja expandidas, de que a lista deriva
+                nos tipos de abrangencia 1 e 5.
+            tipo_abrangencia: Abrangencia do perfil.
+            ano_letivo: Ano letivo do escopo.
 
         Returns:
-            Uma entrada por DRE, com `nomeDRE`/`siglaDRE` sempre `None`.
+            Uma entrada por DRE com par na MV de unidade, ordenada por
+            codigo.
         """
-        if expandir_ues and tipo_abrangencia in _RAMOS_DRE_DERIVADA_DE_UE:
-            codigos = sorted(id_dres) if id_ues_detalhaveis else []
+        if tipo_abrangencia in _TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE:
+            codigos = sorted(
+                {ue["codigoDRE"] for ue in ues_expandidas if ue["codigoDRE"]}
+            )
         else:
-            codigos = sorted(id_dres)
+            codigos = sorted(set(id_dres))
+
+        unidades = self._unidades(TIPO_ESCOPO_DRE, codigos, ano_letivo)
         return [
-            {"codigoDRE": codigo, "nomeDRE": None, "siglaDRE": None}
-            for codigo in codigos
+            {
+                "codigoDRE": codigo,
+                "nomeDRE": unidades[codigo]["nome"],
+                "siglaDRE": unidades[codigo]["sigla"],
+            }
+            for codigo in sorted(unidades)
         ]
 
     def _expandir_turmas(
         self,
-        login: str,
-        perfil_guid: str,
+        id_turmas: list[str],
         ano_letivo: int,
-    ) -> list[dict] | None:
-        """Monta a coleção expandida de turmas, restrita a sondagem.
+    ) -> list[dict]:
+        """Monta a lista expandida de turmas, restrita a sondagem.
 
         Args:
-            login: RF ou CPF do usuário.
-            perfil_guid: GUID do perfil consultado.
+            id_turmas: Turmas do escopo; vazio traz a rede inteira.
             ano_letivo: Ano letivo do escopo.
 
         Returns:
-            Turmas com `nome` sempre `None` (guardamos só o código), ou
-            `None` (não `[]`) quando não há turma elegível.
+            Turmas elegiveis, ordenadas por codigo. Sem nenhuma
+            elegivel, a lista vazia.
         """
+        unidades = self._unidades(
+            TIPO_ESCOPO_TURMA,
+            id_turmas or None,
+            ano_letivo,
+            somente_sondagem=True,
+        )
         turmas = [
             {
-                "codigo": turma["turma_codigo"],
-                "nome": None,
-                "codigoEscola": turma["ue_codigo"],
+                "codigo": codigo,
+                "nome": unidades[codigo]["nome"],
+                "codigoEscola": unidades[codigo]["ue_codigo_pai"],
             }
-            for turma in self._turmas_sondagem(login, perfil_guid, ano_letivo)
+            for codigo in sorted(unidades)
         ]
-        return turmas or None
+        return turmas
 
-    def _perfil_com_vinculos(self, perfil_guid: str) -> dict | None:
-        """Retorna o perfil com seus cargos e funções-atividade.
+    def _perfil_com_vinculos(
+        self,
+        perfil_guid: str,
+        *,
+        funcao_exige_cargo: bool = True,
+    ) -> dict | None:
+        """Retorna o perfil com seus cargos e funcoes-atividade.
 
         Args:
             perfil_guid: GUID do perfil consultado.
+            funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai
+                sem funcao.
 
         Returns:
-            Dados do perfil com cargos e funções ordenados, ou None
-            quando o perfil não existe. Perfil sem vínculo funcional
+            Dados do perfil com cargos e funcoes ordenados, ou None
+            quando o perfil nao existe. Perfil sem vinculo funcional
             devolve as duas listas vazias.
         """
         perfil = (
@@ -442,6 +683,7 @@ class AbrangenciaService:
                 "grupo_codigo",
                 "tipo_abrangencia",
                 "eh_perfil_manual",
+                "eh_grupo_manual",
             )
             .first()
         )
@@ -455,103 +697,61 @@ class AbrangenciaService:
         cargos = sorted(
             {codigo for tipo, codigo in vinculos if tipo == _TIPO_CARGO}
         )
-        funcoes = sorted(
-            {
-                codigo
-                for tipo, codigo in vinculos
-                if tipo == _TIPO_FUNCAO_ATIVIDADE
-            }
+        funcoes = (
+            sorted(
+                {
+                    codigo
+                    for tipo, codigo in vinculos
+                    if tipo == _TIPO_FUNCAO_ATIVIDADE
+                }
+            )
+            if cargos or not funcao_exige_cargo
+            else []
         )
         return {**perfil, "cargos": cargos, "funcoes": funcoes}
 
-    def _escopo_compacto(
+    def _manual_do_perfil(
         self,
-        login: str,
-        perfil_guid: str,
-        ano_letivo: int,
-    ) -> dict | None:
-        """Retorna o escopo agregado do usuário no perfil.
-
-        Filtra pelo trio `(login, perfil, ano letivo)` — as colunas do
-        índice único da MV.
+        perfil: Mapping[str, Any],
+        *,
+        eh_grupo_manual: bool,
+    ) -> bool:
+        """Resolve `ehPerfilManual` pelo repositorio que o endpoint usa.
 
         Args:
-            login: RF ou CPF do usuário.
-            perfil_guid: GUID do perfil consultado.
-            ano_letivo: Ano letivo do escopo.
+            perfil: Linha de `public.perfil` ja lida.
+            eh_grupo_manual: Verdadeiro para o caminho da linha.
 
         Returns:
-            Escopo bruto com os arrays normalizados em lista, ou None
-            quando o usuário não tem linha na MV.
+            O valor de `ehPerfilManual` do caminho pedido.
         """
-        linha = (
-            AbrangenciaCompacta.objects.filter(
-                login=login,
-                perfil_guid=perfil_guid,
-                ano_letivo=ano_letivo,
-            )
-            .values(*_CAMPOS_ESCOPO)
-            .first()
-        )
-        if linha is None:
-            return None
-        return {
-            campo: _lista(valor) if campo.startswith("id_") else valor
-            for campo, valor in linha.items()
-        }
+        coluna = "eh_grupo_manual" if eh_grupo_manual else "eh_perfil_manual"
+        return bool(perfil[coluna])
 
-    def _tipo_abrangencia_do_perfil(self, perfil_guid: str) -> int | None:
-        """Retorna o ramo de abrangência de um perfil.
-
-        Usada como fallback em `abrangencia_compacta` quando o usuário
-        não tem linha na MV.
+    def _tipo_abrangencia_do_perfil(
+        self, perfil_guid: str
+    ) -> tuple[int | None, bool, int | None]:
+        """Retorna tipo de abrangencia, flag manual e grupo.
 
         Args:
             perfil_guid: GUID do perfil consultado.
 
         Returns:
-            Valor de `tipo_abrangencia`, ou None quando o perfil não
-            existe.
+            `tipo_abrangencia`  None quando o perfil nao existe,
+            `eh_perfil_manual`, o flag agregado e `grupo_codigo`.
         """
-        return (
+        perfil = (
             Perfil.objects.filter(perfil_guid=perfil_guid)
-            .values_list("tipo_abrangencia", flat=True)
+            .values("tipo_abrangencia", "eh_perfil_manual", "grupo_codigo")
             .first()
         )
-
-    def _turmas_sondagem(
-        self,
-        login: str,
-        perfil_guid: str,
-        ano_letivo: int,
-    ) -> list[dict]:
-        """Lista as turmas distintas do usuário elegíveis a sondagem.
-
-        Args:
-            login: RF ou CPF do usuário.
-            perfil_guid: GUID do perfil consultado.
-            ano_letivo: Ano letivo do escopo.
-
-        Returns:
-            Turmas com seu código e o da escola, ordenadas por código
-            de turma.
-        """
-        linhas = (
-            UsuarioAbrangencia.objects.filter(
-                login=login,
-                perfil_guid=perfil_guid,
-                ano_letivo=ano_letivo,
-                vigente=True,
-                elegivel_sondagem=True,
-                turma_codigo__isnull=False,
-            )
-            .values_list("turma_codigo", "ue_codigo")
-            .distinct()
+        if perfil is None:
+            return None, False, None
+        return (
+            perfil["tipo_abrangencia"],
+            bool(perfil["eh_perfil_manual"]),
+            perfil["grupo_codigo"],
         )
-        return [
-            {"turma_codigo": turma, "ue_codigo": ue}
-            for turma, ue in sorted(set(linhas))
-        ]
 
     def _usuarios_por_perfil(
         self,
@@ -559,36 +759,30 @@ class AbrangenciaService:
         dre: str | None,
         perfis: list[str],
     ) -> list[dict]:
-        """Lista os usuários lotados na UE em cada perfil informado.
-
-        Lê a tabela de fato, não a materialized view agregada por
-        perfil, para poder restringir por `origem` (lotação, não
-        atribuição de aula).
-
-        Args:
-            ue: Código da unidade educacional.
-            dre: Código da DRE; None não filtra.
-            perfis: GUIDs dos perfis consultados.
+        """Seleciona usuarios pelo filtro e projeta todos os perfis possuidos.
 
         Returns:
             Um registro por par `(login, perfil)`, com as UEs ordenadas.
         """
-        consulta = UsuarioAbrangencia.objects.filter(
-            ue_codigo=ue,
-            perfil_guid__in=perfis,
-            vigente=True,
-            origem__in=ORIGENS_LOTACAO,
-        )
-        if dre is not None:
-            consulta = consulta.filter(dre_codigo=dre)
+        base = UsuarioPorPerfil.objects.filter(ano_letivo=self._ano_letivo())
+        selecao = base.filter(ue_codigo=ue, perfil_guid__in=perfis)
+        if dre:
+            selecao = selecao.filter(
+                usuario_rf__in=base.filter(dre_codigo=dre).values("usuario_rf")
+            )
+
+        logins = set(selecao.values_list("usuario_rf", flat=True))
+        if not logins:
+            return []
 
         agrupado: dict[tuple[str, str], set[str]] = {}
-        for login, perfil_guid, ue_codigo in consulta.values_list(
-            "login", "perfil_guid", "ue_codigo"
+        completa = base.filter(usuario_rf__in=logins)
+        for login, perfil_guid, ue_codigo in completa.values_list(
+            "usuario_rf", "perfil_guid", "ue_codigo"
         ):
-            # O filtro `ue_codigo=ue` já garante que a coluna não é nula.
-            chave = (login, str(perfil_guid))
-            agrupado.setdefault(chave, set()).add(str(ue_codigo))
+            ues = agrupado.setdefault((login, str(perfil_guid)), set())
+            if ue_codigo:
+                ues.add(str(ue_codigo))
 
         return [
             {

@@ -64,7 +64,6 @@ python_functions = ["test_*"]
 
 [tool.mypy]
 python_version = "3.12"
-plugins = ["mypy_django_plugin.main"]
 exclude = ".*/migrations/.*"
 warn_return_any = true
 warn_unused_configs = true
@@ -75,16 +74,9 @@ ignore_missing_imports = true
 module = "apps.*.testes.*"
 disable_error_code = ["index", "arg-type", "union-attr"]
 
-# Campo de model declarado sem anotação. Sem `django-stubs` o mypy não infere
-# o tipo do descritor, e os models espelham colunas de um schema que este
-# serviço não gerencia (managed=False) — anotar cada campo não acrescentaria
-# segurança adicional.
 [[tool.mypy.overrides]]
 module = "apps.*.models"
 disable_error_code = ["var-annotated"]
-
-[tool.django-stubs]
-django_settings_module = "config.settings"
 
 [tool.coverage.run]
 source = ["apps"]

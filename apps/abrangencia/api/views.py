@@ -18,7 +18,7 @@ from apps.abrangencia.serializers import (
 )
 from apps.abrangencia.services import AbrangenciaService
 
-_TAG = ["Abrangência"]
+_TAG = ["Abrangencia"]
 
 _PARAM_PERFIL = OpenApiParameter(
     "id_perfil", str, OpenApiParameter.PATH, description="GUID do perfil."
@@ -40,12 +40,7 @@ def _perfil_invalido(id_perfil: str) -> bool:
 
 
 class PerfilView(APIView):
-    """Consulta isolada de um perfil, sem depender de um usuário.
-
-    Serve o mesmo payload que `_CompactaBaseView` aninha em `abrangencia`
-    — reaproveitado via `AbrangenciaService.grupo_cargos`, ponto único de
-    montagem desse objeto.
-    """
+    """Consulta isolada de um perfil, sem depender de um usuário."""
 
     @extend_schema(
         tags=_TAG,
@@ -58,7 +53,7 @@ class PerfilView(APIView):
         operation_id="abrangencia_perfil",
     )
     def get(self, _request: Request, id_perfil: str) -> Response:
-        """Retorna o perfil consultado."""
+        """Retorna os vínculos funcionais e a abrangência do perfil."""
         if _perfil_invalido(id_perfil):
             return Response(
                 {"detail": "O perfil é obrigatório."},
@@ -71,13 +66,7 @@ class PerfilView(APIView):
 
 
 class _CompactaBaseView(APIView):
-    """Base dos quatro endpoints de escopo compacto.
-
-    As subclasses só alternam os quatro atributos de classe abaixo — todas
-    chamam o mesmo `AbrangenciaService.abrangencia_compacta`, evitando que
-    cada endpoint reimplemente a orquestração de perfil, escopo e
-    expansões.
-    """
+    """Base dos quatro endpoints de escopo compacto."""
 
     expandir_dres = False
     expandir_ues = False
@@ -85,7 +74,7 @@ class _CompactaBaseView(APIView):
     algoritmo_alternativo = False
 
     def get(self, _request: Request, login: str, id_perfil: str) -> Response:
-        """Retorna o escopo do usuário no perfil, conforme os atributos."""
+        """Retorna as DREs, UEs e turmas a partir do login e perfil."""
         if _perfil_invalido(id_perfil):
             return Response(
                 {"detail": "O perfil é obrigatório."},
@@ -103,7 +92,7 @@ class _CompactaBaseView(APIView):
 
 
 class CompactaVigenteView(_CompactaBaseView):
-    """Retorna o escopo vigente do usuário no perfil."""
+    """Serve escopo vigente, sem expandir nenhuma lista."""
 
     @extend_schema(
         tags=_TAG,
@@ -119,8 +108,9 @@ class CompactaVigenteView(_CompactaBaseView):
 
 
 class CompactaDreDetalhesView(_CompactaBaseView):
-    """Retorna o escopo vigente pelo algoritmo alternativo."""
+    """Serve escopo alternativo com a lista de DREs expandida."""
 
+    expandir_dres = True
     algoritmo_alternativo = True
 
     @extend_schema(
@@ -133,11 +123,12 @@ class CompactaDreDetalhesView(_CompactaBaseView):
         operation_id="abrangencia_compacta_dre_detalhes",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
+        """Retorna detalhes de DREs a partir do login e perfil."""
         return super().get(request, login, id_perfil)
 
 
 class CompactaSondagemView(_CompactaBaseView):
-    """Retorna o escopo vigente com as coleções expandidas."""
+    """Serve escopo alternativo com as três coleções expandidas."""
 
     expandir_dres = True
     expandir_ues = True
@@ -154,11 +145,12 @@ class CompactaSondagemView(_CompactaBaseView):
         operation_id="abrangencia_compacta_sondagem",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
+        """Retorna turmas elegíveis para sondagem do login e perfil."""
         return super().get(request, login, id_perfil)
 
 
 class CompactaSemRedisView(_CompactaBaseView):
-    """Retorna o escopo vigente sem passar por cache intermediário."""
+    """Serve escopo alternativo, sem expandir nenhuma lista."""
 
     algoritmo_alternativo = True
 
@@ -176,11 +168,7 @@ class CompactaSemRedisView(_CompactaBaseView):
 
 
 class PerfisUsuariosView(APIView):
-    """Ponto de entrada que sustenta a listagem em massa por UE.
-
-    Único endpoint deste domínio que recebe filtros no corpo em vez de na
-    URL — a lista de perfis não cabe em um parâmetro de rota.
-    """
+    """Lista usuários e seus perfis a partir de uma UE e DRE."""
 
     @extend_schema(
         tags=_TAG,

@@ -1,10 +1,10 @@
-"""Constantes do domínio Abrangência."""
+"""Constantes do dominio Abrangencia."""
 
 from enum import IntEnum
 
 
 class TipoAbrangencia(IntEnum):
-    """Ramos de abrangência territorial de um perfil."""
+    """Tipos de abrangencia territorial de um perfil."""
 
     UE = 1
     PROFESSOR = 2
@@ -12,6 +12,7 @@ class TipoAbrangencia(IntEnum):
     DRE = 4
     DRE_ESCOLAS_ATRIBUIDAS = 5
     SME = 6
+
 
 GUID_VAZIO = "00000000-0000-0000-0000-000000000000"
 

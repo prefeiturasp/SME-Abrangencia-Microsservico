@@ -1,4 +1,4 @@
-"""Modelos de leitura do domínio Abrangência."""
+"""Modelos de leitura do dominio Abrangencia."""
 
 from django.db import models
 
@@ -6,7 +6,7 @@ from apps.core.models import ModeloBase
 
 
 class Perfil(ModeloBase):
-    """Perfil com o ramo de abrangência que ele resolve."""
+    """Perfil com o tipo de abrangencia que ele resolve."""
 
     perfil_guid = models.UUIDField(primary_key=True)
     grupo_codigo = models.IntegerField(unique=True)
@@ -27,7 +27,7 @@ class Perfil(ModeloBase):
 
 
 class PerfilVinculoFuncional(ModeloBase):
-    """Cargo ou função-atividade que concede um perfil."""
+    """Cargo ou funcao-atividade que concede um perfil."""
 
     pk = models.CompositePrimaryKey("perfil_guid", "tipo", "codigo")
     perfil_guid = models.UUIDField()
@@ -37,15 +37,15 @@ class PerfilVinculoFuncional(ModeloBase):
 
     class Meta(ModeloBase.Meta):
         db_table = "perfil_vinculo_funcional"
-        verbose_name = "vínculo funcional do perfil"
-        verbose_name_plural = "vínculos funcionais do perfil"
+        verbose_name = "vinculo funcional do perfil"
+        verbose_name_plural = "vinculos funcionais do perfil"
 
     def __str__(self) -> str:
         return f"{self.perfil_guid} - {self.tipo} - {self.codigo}"
 
 
 class AbrangenciaResolvida(ModeloBase):
-    """Uma linha de escopo já filtrada pelo perfil."""
+    """Uma linha de escopo ja filtrada pelo perfil."""
 
     usuario_abrangencia_id = models.BigIntegerField(primary_key=True)
     login = models.TextField()
@@ -65,8 +65,8 @@ class AbrangenciaResolvida(ModeloBase):
 
     class Meta(ModeloBase.Meta):
         db_table = "mv_abrangencia_resolvida"
-        verbose_name = "abrangência resolvida"
-        verbose_name_plural = "abrangências resolvidas"
+        verbose_name = "abrangencia resolvida"
+        verbose_name_plural = "abrangencias resolvidas"
 
     def __str__(self) -> str:
         return (
@@ -98,7 +98,7 @@ class Unidade(ModeloBase):
 
 
 class UsuarioPorPerfil(ModeloBase):
-    """Usuário vigente em um perfil, por ano, UE e DRE."""
+    """Usuario vigente em um perfil, por ano, UE e DRE."""
 
     pk = models.CompositePrimaryKey(
         "usuario_rf", "perfil_guid", "ano_letivo", "ue_codigo", "dre_codigo"
@@ -111,8 +111,8 @@ class UsuarioPorPerfil(ModeloBase):
 
     class Meta(ModeloBase.Meta):
         db_table = "mv_abrangencia_usuarios_perfil"
-        verbose_name = "usuário por perfil"
-        verbose_name_plural = "usuários por perfil"
+        verbose_name = "usuario por perfil"
+        verbose_name_plural = "usuarios por perfil"
 
     def __str__(self) -> str:
         return f"{self.usuario_rf} - {self.perfil_guid} - {self.ue_codigo}"

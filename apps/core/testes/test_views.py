@@ -16,3 +16,12 @@ class TestHealthCheckView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy"}
+
+    def test_responde_em_health_sob_o_prefixo_do_dominio(self) -> None:
+        """Garante o caminho `/api/abrangencia/health/`."""
+        client = APIClient()
+
+        response = client.get("/api/abrangencia/health/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"status": "healthy"}
