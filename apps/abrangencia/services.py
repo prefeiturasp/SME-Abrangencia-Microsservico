@@ -300,49 +300,100 @@ class AbrangenciaService:
             Os tres niveis do payload, usando `[]` ou `None` conforme o
             tipo de abrangencia.
         """
-        mapa = (
-            _NIVEIS_VAZIOS_DETALHES
-            if algoritmo_alternativo
-            else _NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA
-        )
-        vazios: frozenset[str] = (
-            frozenset()
-            if tipo_abrangencia is None
-            else mapa.get(tipo_abrangencia, frozenset())
-        )
-        if (
-            not algoritmo_alternativo
-            and tipo_abrangencia == TipoAbrangencia.UE_TURMAS_DISCIPLINAS
-            and not escopo_de_contrato_externo
-        ):
-            vazios = vazios | {"idTurmas"}
-        if (
-            not algoritmo_alternativo
-            and tipo_abrangencia == TipoAbrangencia.DRE
-            and not eh_perfil_manual
-        ):
-            vazios = vazios | _NIVEIS_VAZIOS_DRE_NAO_MANUAL
-        if (
-            not algoritmo_alternativo
-            and not escopo_de_contrato_externo
-            and self._e07_ue_mantem_nulo(
+        if algoritmo_alternativo:
+            vazios = self._niveis_vazios_detalhes(tipo_abrangencia)
+            if tipo_abrangencia is not None:
+                return {
+                    chave: (valor or []) if chave in vazios else None
+                    for chave, valor in codigos.items()
+                }
+        else:
+            vazios = self._niveis_vazios_compacta(
                 tipo_abrangencia,
+                escopo_de_contrato_externo=escopo_de_contrato_externo,
                 eh_perfil_manual=eh_perfil_manual,
                 grupo_codigo=grupo_codigo,
             )
-        ):
-            vazios = vazios - {"idUes"}
-
-        if algoritmo_alternativo and tipo_abrangencia is not None:
-            return {
-                chave: (valor or []) if chave in vazios else None
-                for chave, valor in codigos.items()
-            }
 
         return {
-            chave: valor if valor else ([] if chave in vazios else None)
+            chave: self._nivel_projetado(valor, chave in vazios)
             for chave, valor in codigos.items()
         }
+
+    def _nivel_projetado(
+        self,
+        codigos: Codigos,
+        sai_vazio: bool,
+    ) -> Codigos | None:
+        """Escolhe entre `[]` e `None` para um nivel sem codigo.
+
+        Args:
+            codigos: Codigos do nivel.
+            sai_vazio: Verdadeiro quando o nivel projeta `[]`.
+
+        Returns:
+            Os proprios codigos, ou `[]`/`None` quando nao ha nenhum.
+        """
+        if codigos:
+            return codigos
+        return [] if sai_vazio else None
+
+    def _niveis_vazios_detalhes(
+        self,
+        tipo_abrangencia: int | None,
+    ) -> frozenset[str]:
+        """Lista os niveis que saem `[]` no `tipo_resolucao` DETALHES.
+
+        Args:
+            tipo_abrangencia: Tipo de abrangencia do perfil.
+
+        Returns:
+            As chaves do payload que o tipo de abrangencia projeta.
+        """
+        if tipo_abrangencia is None:
+            return frozenset()
+        return _NIVEIS_VAZIOS_DETALHES.get(tipo_abrangencia, frozenset())
+
+    def _niveis_vazios_compacta(
+        self,
+        tipo_abrangencia: int | None,
+        *,
+        escopo_de_contrato_externo: bool,
+        eh_perfil_manual: bool,
+        grupo_codigo: int | None,
+    ) -> frozenset[str]:
+        """Lista os niveis que saem `[]` no `tipo_resolucao` COMPACTA.
+
+        Args:
+            tipo_abrangencia: Tipo de abrangencia do perfil.
+            escopo_de_contrato_externo: Escopo resolvido pelo contrato
+                externo, que nao chega a consulta de turmas do POA.
+            eh_perfil_manual: Flag agregado do perfil.
+            grupo_codigo: Codigo do grupo do perfil.
+
+        Returns:
+            As chaves do payload que saem `[]` quando nao ha codigo.
+        """
+        if tipo_abrangencia is None:
+            return frozenset()
+
+        vazios = _NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA.get(
+            tipo_abrangencia, frozenset()
+        )
+        if (
+            tipo_abrangencia == TipoAbrangencia.UE_TURMAS_DISCIPLINAS
+            and not escopo_de_contrato_externo
+        ):
+            vazios = vazios | {"idTurmas"}
+        if tipo_abrangencia == TipoAbrangencia.DRE and not eh_perfil_manual:
+            vazios = vazios | _NIVEIS_VAZIOS_DRE_NAO_MANUAL
+        if not escopo_de_contrato_externo and self._e07_ue_mantem_nulo(
+            tipo_abrangencia,
+            eh_perfil_manual=eh_perfil_manual,
+            grupo_codigo=grupo_codigo,
+        ):
+            vazios = vazios - {"idUes"}
+        return vazios
 
     def _e07_ue_mantem_nulo(
         self,
