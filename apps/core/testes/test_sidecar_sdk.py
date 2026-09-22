@@ -40,8 +40,8 @@ with patch('sme_sidecar_sdk.runtime.configure') as configurar:
     configurar.assert_called_once_with()
 
 with patch.dict('os.environ', {
-    'SME_RABBITMQ_URL': 'amqp://broker-ficticio:5672/%2F',
-    'SME_LOG_RABBITMQ_QUEUE': 'fila-ficticia',
+    'SME_BROKER_URL': 'amqp://broker-ficticio:5672/%2F',
+    'SME_LOG_QUEUE': 'fila-ficticia',
 }):
     transporte = Settings(_env_file=None)
 
@@ -79,7 +79,7 @@ def execucao_sdk() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         "SME_CORRELATION_ID_HEADER": "X-Request-ID",
         "SME_OBSERVABILITY_BACKEND": "elastic",
         "SME_OTEL_ENABLED": "false",
-        "SME_LOG_RABBITMQ_QUEUE": "",
+        "SME_LOG_QUEUE": "",
     }
     processo = subprocess.run(
         [sys.executable, "-c", _ROTEIRO],
@@ -157,10 +157,10 @@ def test_emite_um_evento_json_por_requisicao(
         assert evento["timestamp"]
 
 
-def test_le_variaveis_de_transporte_suportadas_pela_tag(
+def test_le_variaveis_de_transporte_pelos_nomes_do_sdk(
     execucao_sdk: tuple[dict[str, Any], list[dict[str, Any]]],
 ) -> None:
-    """Lê os nomes canônicos do SDK sem inicializar transporte externo."""
+    """Lê SME_BROKER_URL e SME_LOG_QUEUE sem abrir conexão externa."""
     resultado, _ = execucao_sdk
     assert resultado["broker_configurado"] == (
         "amqp://broker-ficticio:5672/%2F"
