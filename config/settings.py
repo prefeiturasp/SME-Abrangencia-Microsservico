@@ -19,7 +19,6 @@ DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = [
     host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 ]
-NIVEL_LOG = os.getenv("NIVEL_LOG", "INFO")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -27,12 +26,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
-    "apps.core",
+    "apps.core.apps.CoreConfig",
     "apps.autenticacao",
     "apps.abrangencia",
 ]
 
 MIDDLEWARE = [
+    "sme_sidecar_sdk.integrations.django.ObservabilityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
@@ -152,37 +152,3 @@ SPECTACULAR_SETTINGS = {
 }
 
 TEST_RUNNER = "config.test_runner.AbrangenciaTestRunner"
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "json": {
-            "()": "pythonjsonlogger.json.JsonFormatter",
-            "fmt": "%(asctime)s %(levelname)s %(name)s %(message)s",
-            "rename_fields": {
-                "asctime": "timestamp",
-                "levelname": "nivel",
-                "name": "logger",
-            },
-            "json_ensure_ascii": False,
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-        },
-    },
-    "loggers": {
-        "abrangencia": {
-            "handlers": ["console"],
-            "level": NIVEL_LOG,
-            "propagate": False,
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": NIVEL_LOG,
-    },
-}

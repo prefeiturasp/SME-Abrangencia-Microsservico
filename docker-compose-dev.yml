@@ -5,14 +5,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      args:
+        GIT_SSL_NO_VERIFY: "${GIT_SSL_NO_VERIFY:-1}"
 
     volumes:
       - .:/app
+      - ../SME-Sidecar-SDK:/sdk
 
     env_file:
       - .env
 
-    command: python manage.py runserver 0.0.0.0:${PORT_WEB:-8003}
+    command: >
+      sh -c "pip install -e /sdk --quiet &&
+             python -Xfrozen_modules=off manage.py runserver 0.0.0.0:${PORT_WEB:-8003}"
 
     ports:
       - "${PORT_WEB:-8003}:${PORT_WEB:-8003}"

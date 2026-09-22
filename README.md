@@ -107,3 +107,20 @@ curl -H "X-API-Key: dev-key-default" \
 
 - As rotas do dominio nao usam barra final mantendo compatibilidade com o legado.
 - Campos em camelCase preservam o contrato existente na API legado.
+
+**SME Sidecar SDK**
+
+| Variável                          | Padrão                  | Descrição                                       |
+| --------------------------------- | ----------------------- | ----------------------------------------------- |
+| `SME_SERVICE_NAME`                | `abrangencia-ms`        | Nome do serviço nos logs e traces               |
+| `SME_SERVICE_VERSION`             | `unknown`               | Versão publicada na telemetria                  |
+| `SME_ENVIRONMENT`                 | `dev`                   | Ambiente de execução                            |
+| `SME_TIMEOUT_SECONDS`             | `10`                    | Timeout das chamadas às APIs externas           |
+| `SME_LOG_LEVEL`                   | `ERROR`                 | Nível mínimo dos logs                           |
+| `SME_LOG_FORMAT`                  | `json`                  | Formato `json` ou `console`                     |
+| `SME_OTEL_ENABLED`                | `false`                 | Ativa tracing OpenTelemetry                     |
+| `SME_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | URL OTLP gRPC configurada diretamente no `.env` |
+| `SME_OTEL_EXPORTER_OTLP_HEADERS`  | —                       | Headers do exporter em `chave=valor`            |
+| `SME_OTEL_EXPORTER_OTLP_INSECURE` | `true`                  | Desabilita TLS no transporte OTLP               |
+| `SME_RABBITMQ_URL`                | —                       | URL AMQP para transporte opcional de logs       |
+| `SME_LOG_RABBITMQ_QUEUE`          | —                       | Fila RabbitMQ de logs                           |

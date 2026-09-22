@@ -21,6 +21,9 @@ COPY apps /app/apps
 COPY config /app/config
 COPY manage.py /app/
 
+ARG GIT_SSL_NO_VERIFY=0
+ENV GIT_SSL_NO_VERIFY=${GIT_SSL_NO_VERIFY}
+
 RUN pip install --upgrade pip \
     && pip install -r /app/requirements/local.txt
 
