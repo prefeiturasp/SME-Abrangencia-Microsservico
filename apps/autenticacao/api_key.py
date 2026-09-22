@@ -40,7 +40,7 @@ class AutenticacaoApiKey(BaseAuthentication):
     def authenticate(
         self, request: Request
     ) -> tuple[_UsuarioApiKey, None] | None:
-        """Retorna `None` sem header — outro backend pode tentar depois.
+        """Retorna `None` sem header outro backend pode tentar depois.
 
         Raises:
             AuthenticationFailed: Header presente com chave inválida.

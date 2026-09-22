@@ -60,7 +60,7 @@ def _url_para_bd(url: str | None) -> dict[str, Any]:
 
     Returns:
         Dicionário de configuração do Django, com pool de conexões via
-        ``dj_db_conn_pool``. Sem URL, cai em SQLite em memória — usado
+        ``dj_db_conn_pool``. Sem URL, cai em SQLite em memória usado
         pela suíte de testes, que nunca toca o banco real.
     """
     if not url:
