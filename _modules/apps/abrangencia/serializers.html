@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="pt-BR" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>apps.abrangencia.serializers &mdash; SME-Abrangencia-Microsservico</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            SME-Abrangencia-Microsservico
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Conteúdo</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../arquitetura/visao_geral.html">Visão Geral</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../controle/index.html">Controle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SME-Abrangencia-Microsservico</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Código do módulo</a></li>
+      <li class="breadcrumb-item active">apps.abrangencia.serializers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Código-fonte para apps.abrangencia.serializers</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Serializers do domínio Abrangência."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">drf_spectacular.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenApiExample</span><span class="p">,</span> <span class="n">extend_schema_serializer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rest_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">serializers</span>
+
+
+<div class="viewcode-block" id="GrupoCargosSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.GrupoCargosSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GrupoCargosSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa o perfil e os vínculos funcionais que o concedem."""</span>
+
+    <span class="n">grupoID</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>  <span class="c1"># noqa: N815</span>
+    <span class="n">cargosId</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>  <span class="c1"># noqa: N815</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">funcoesId</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>  <span class="c1"># noqa: N815</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">grupo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
+    <span class="n">abrangencia</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">()</span>
+    <span class="n">ehPerfilManual</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">()</span>  <span class="c1"># noqa: N815</span></div>
+
+
+
+<div class="viewcode-block" id="DreExpandidaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.DreExpandidaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DreExpandidaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa detalhes da DRE."""</span>
+
+    <span class="n">codigoDRE</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># noqa: N815</span>
+    <span class="n">nomeDRE</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># noqa: N815</span>
+    <span class="n">siglaDRE</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># noqa: N815</span></div>
+
+
+
+<div class="viewcode-block" id="UeExpandidaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.UeExpandidaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UeExpandidaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa detalhes da UE."""</span>
+
+    <span class="n">codigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">codigoDRE</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># noqa: N815</span>
+    <span class="n">nome</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sigla</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TurmaExpandidaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.TurmaExpandidaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TurmaExpandidaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa detalhes da turma."""</span>
+
+    <span class="n">codigo</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">nome</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">codigoEscola</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># noqa: N815</span></div>
+
+
+
+<div class="viewcode-block" id="AbrangenciaCompactaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.AbrangenciaCompactaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AbrangenciaCompactaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa o escopo de um usuário em um perfil."""</span>
+
+    <span class="n">login</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+    <span class="n">abrangencia</span> <span class="o">=</span> <span class="n">GrupoCargosSerializer</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">idDres</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>  <span class="c1"># noqa: N815</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(),</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">dres</span> <span class="o">=</span> <span class="n">DreExpandidaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">idUes</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>  <span class="c1"># noqa: N815</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">ues</span> <span class="o">=</span> <span class="n">UeExpandidaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">idTurmas</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>  <span class="c1"># noqa: N815</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(),</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">turmas</span> <span class="o">=</span> <span class="n">TurmaExpandidaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="PerfilAbrangenciaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.PerfilAbrangenciaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PerfilAbrangenciaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa um perfil do usuário e as UEs em que ele o exerce."""</span>
+
+    <span class="n">perfil</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+    <span class="n">ues</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="UsuarioPerfilsAbrangenciaSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.UsuarioPerfilsAbrangenciaSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UsuarioPerfilsAbrangenciaSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Representa um usuário e seus perfis na UE consultada."""</span>
+
+    <span class="n">usuarioRf</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>  <span class="c1"># noqa: N815</span>
+    <span class="n">perfils</span> <span class="o">=</span> <span class="n">PerfilAbrangenciaSerializer</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BuscarUsuariosPerfisSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.BuscarUsuariosPerfisSerializer">[documentos]</a>
+<span class="nd">@extend_schema_serializer</span><span class="p">(</span>
+    <span class="n">examples</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">OpenApiExample</span><span class="p">(</span>
+            <span class="s2">"Payload legado"</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"ue"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+                <span class="s2">"dre"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span>
+                <span class="s2">"perfis"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"string"</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">request_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BuscarUsuariosPerfisSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Valida o corpo da busca de usuários por perfil."""</span>
+
+    <span class="n">ue</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+    <span class="n">dre</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">allow_null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="n">perfis</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListField</span><span class="p">(</span>
+        <span class="n">child</span><span class="o">=</span><span class="n">serializers</span><span class="o">.</span><span class="n">UUIDField</span><span class="p">(),</span> <span class="n">allow_empty</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="DetalheErroSerializer">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.serializers.DetalheErroSerializer">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DetalheErroSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">Serializer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Corpo de erro genérico, usado nas respostas 400 deste domínio."""</span>
+
+    <span class="n">detail</span> <span class="o">=</span> <span class="n">serializers</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais .</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

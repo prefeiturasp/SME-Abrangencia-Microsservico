@@ -1,0 +1,962 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="pt-BR" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>apps.abrangencia.services &mdash; SME-Abrangencia-Microsservico</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2346ddef"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/translations.js?v=71a39b36"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../../../genindex.html" />
+    <link rel="search" title="Buscar" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            SME-Abrangencia-Microsservico
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Conteúdo</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../arquitetura/visao_geral.html">Visão Geral</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../controle/index.html">Controle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Referência de código</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SME-Abrangencia-Microsservico</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Código do módulo</a></li>
+      <li class="breadcrumb-item active">apps.abrangencia.services</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Código-fonte para apps.abrangencia.services</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Servicos do dominio Abrangencia."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.conf</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.abrangencia.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GRUPO_COMUNICADOS_UE</span><span class="p">,</span>
+    <span class="n">ORIGENS_UE_POR_EXERCICIO</span><span class="p">,</span>
+    <span class="n">TIPO_ESCOPO_DRE</span><span class="p">,</span>
+    <span class="n">TIPO_ESCOPO_TURMA</span><span class="p">,</span>
+    <span class="n">TIPO_ESCOPO_UE</span><span class="p">,</span>
+    <span class="n">TIPO_RESOLUCAO_COMPACTA</span><span class="p">,</span>
+    <span class="n">TIPO_RESOLUCAO_DETALHES</span><span class="p">,</span>
+    <span class="n">TipoAbrangencia</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">apps.abrangencia.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AbrangenciaResolvida</span><span class="p">,</span>
+    <span class="n">Perfil</span><span class="p">,</span>
+    <span class="n">PerfilVinculoFuncional</span><span class="p">,</span>
+    <span class="n">Unidade</span><span class="p">,</span>
+    <span class="n">UsuarioPorPerfil</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">_NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">PROFESSOR</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idDres"</span><span class="p">,</span> <span class="s2">"idUes"</span><span class="p">,</span> <span class="s2">"idTurmas"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">SME</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idDres"</span><span class="p">,</span> <span class="s2">"idUes"</span><span class="p">,</span> <span class="s2">"idTurmas"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idUes"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idUes"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">(),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE_ESCOLAS_ATRIBUIDAS</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">(),</span>
+<span class="p">}</span>
+
+<span class="n">_NIVEIS_VAZIOS_DRE_NAO_MANUAL</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idDres"</span><span class="p">})</span>
+
+<span class="n">_ORIGEM_CONTRATO_EXTERNO</span> <span class="o">=</span> <span class="s2">"CONTRATO_EXTERNO"</span>
+
+
+<span class="n">_NIVEIS_VAZIOS_DETALHES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">PROFESSOR</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idTurmas"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">SME</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idDres"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idUes"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idTurmas"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idDres"</span><span class="p">}),</span>
+    <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE_ESCOLAS_ATRIBUIDAS</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"idUes"</span><span class="p">}),</span>
+<span class="p">}</span>
+
+
+<span class="n">_TIPOS_ABRANGENCIA_DRE_DE_ID_DRES</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE</span><span class="p">,</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">SME</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">_TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE</span><span class="p">,</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE_ESCOLAS_ATRIBUIDAS</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_UE</span> <span class="o">=</span> <span class="n">_TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE</span>
+<span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_TURMA</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">PROFESSOR</span><span class="p">,</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_DRE</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">_TIPOS_ABRANGENCIA_DRE_DE_ID_DRES</span> <span class="o">|</span> <span class="n">_TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE</span>
+<span class="p">)</span>
+
+
+<span class="n">_ESCOPO_POR_TIPO</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">TIPO_ESCOPO_DRE</span><span class="p">:</span> <span class="p">(</span><span class="s2">"idDres"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="n">TIPO_ESCOPO_UE</span><span class="p">:</span> <span class="p">(</span><span class="s2">"idUes"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">TIPO_ESCOPO_TURMA</span><span class="p">:</span> <span class="p">(</span><span class="s2">"idTurmas"</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">_TIPO_CARGO</span> <span class="o">=</span> <span class="s2">"CARGO"</span>
+<span class="n">_TIPO_FUNCAO_ATIVIDADE</span> <span class="o">=</span> <span class="s2">"FUNCAO_ATIVIDADE"</span>
+
+<span class="n">Codigos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sem_nulos</span><span class="p">(</span><span class="n">codigos</span><span class="p">:</span> <span class="n">Codigos</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Descarta o codigo nulo, que so `idUes` carrega.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        codigos: Codigos de um nivel do escopo.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Os mesmos codigos, sem o nulo.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">codigo</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span> <span class="k">if</span> <span class="n">codigo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AbrangenciaService">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.services.AbrangenciaService">[documentos]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AbrangenciaService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Servico responsavel pelas operacoes do dominio Abrangencia."""</span>
+
+<div class="viewcode-block" id="AbrangenciaService.grupo_cargos">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.services.AbrangenciaService.grupo_cargos">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">grupo_cargos</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">funcao_exige_cargo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">eh_grupo_manual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Monta o payload de perfil com seus cargos e funcoes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+<span class="sd">            funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai</span>
+<span class="sd">                sem funcao  ver `_perfil_com_vinculos`.</span>
+<span class="sd">            eh_grupo_manual: Informa se o grupo do perfil e manual.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Payload do perfil, ou None quando ele nao existe.</span>
+<span class="sd">        """</span>
+        <span class="n">perfil</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_perfil_com_vinculos</span><span class="p">(</span>
+            <span class="n">perfil_guid</span><span class="p">,</span> <span class="n">funcao_exige_cargo</span><span class="o">=</span><span class="n">funcao_exige_cargo</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">perfil</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"grupoID"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">perfil</span><span class="p">[</span><span class="s2">"perfil_guid"</span><span class="p">]),</span>
+            <span class="s2">"cargosId"</span><span class="p">:</span> <span class="n">perfil</span><span class="p">[</span><span class="s2">"cargos"</span><span class="p">],</span>
+            <span class="s2">"funcoesId"</span><span class="p">:</span> <span class="n">perfil</span><span class="p">[</span><span class="s2">"funcoes"</span><span class="p">],</span>
+            <span class="s2">"grupo"</span><span class="p">:</span> <span class="n">perfil</span><span class="p">[</span><span class="s2">"grupo_codigo"</span><span class="p">],</span>
+            <span class="s2">"abrangencia"</span><span class="p">:</span> <span class="n">perfil</span><span class="p">[</span><span class="s2">"tipo_abrangencia"</span><span class="p">],</span>
+            <span class="s2">"ehPerfilManual"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manual_do_perfil</span><span class="p">(</span>
+                <span class="n">perfil</span><span class="p">,</span> <span class="n">eh_grupo_manual</span><span class="o">=</span><span class="n">eh_grupo_manual</span>
+            <span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AbrangenciaService.abrangencia_compacta">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.services.AbrangenciaService.abrangencia_compacta">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">abrangencia_compacta</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">expandir_dres</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">expandir_ues</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">expandir_turmas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">algoritmo_alternativo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Monta o payload de escopo compacto de um usuario em um perfil.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            login: RF ou CPF do usuario.</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+<span class="sd">            ano_letivo: Ano letivo; None usa `ABRANGENCIA_ANO_LETIVO`.</span>
+<span class="sd">            expandir_dres: Preenche `dres`.</span>
+<span class="sd">            expandir_ues: Preenche `ues`.</span>
+<span class="sd">            expandir_turmas: Preenche `turmas`, restritas a sondagem.</span>
+<span class="sd">            algoritmo_alternativo: Le as linhas de `tipo_resolucao`</span>
+<span class="sd">                `DETALHES` em vez das de `COMPACTA`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Payload com as oito chaves do contrato, sempre presentes.</span>
+<span class="sd">            Campo nao expandido sai `None`, nunca `[]`.</span>
+<span class="sd">        """</span>
+        <span class="n">ano</span> <span class="o">=</span> <span class="n">ano_letivo</span> <span class="k">if</span> <span class="n">ano_letivo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ano_letivo</span><span class="p">()</span>
+        <span class="n">tipo_resolucao</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">TIPO_RESOLUCAO_DETALHES</span>
+            <span class="k">if</span> <span class="n">algoritmo_alternativo</span>
+            <span class="k">else</span> <span class="n">TIPO_RESOLUCAO_COMPACTA</span>
+        <span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">tipo_abrangencia</span><span class="p">,</span>
+            <span class="n">eh_perfil_manual</span><span class="p">,</span>
+            <span class="n">grupo_codigo</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tipo_abrangencia_do_perfil</span><span class="p">(</span><span class="n">perfil_guid</span><span class="p">)</span>
+        <span class="n">codigos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_escopo_resolvido</span><span class="p">(</span>
+            <span class="n">login</span><span class="p">,</span> <span class="n">perfil_guid</span><span class="p">,</span> <span class="n">ano</span><span class="p">,</span> <span class="n">tipo_resolucao</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">SME</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">[</span><span class="s2">"idDres"</span><span class="p">]:</span>
+            <span class="n">dres_da_rede</span><span class="p">:</span> <span class="n">Codigos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dres_da_rede</span><span class="p">(</span><span class="n">ano</span><span class="p">))</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">codigos</span><span class="p">,</span> <span class="s2">"idDres"</span><span class="p">:</span> <span class="n">dres_da_rede</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">algoritmo_alternativo</span> <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE</span><span class="p">:</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limitar_dre_unica</span><span class="p">(</span><span class="n">codigos</span><span class="p">)</span>
+
+        <span class="n">de_contrato_externo</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">algoritmo_alternativo</span>
+            <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_escopo_veio_de_contrato_externo</span><span class="p">(</span><span class="n">login</span><span class="p">,</span> <span class="n">perfil_guid</span><span class="p">,</span> <span class="n">ano</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">escopo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_aplicar_nivel_vazio</span><span class="p">(</span>
+            <span class="n">codigos</span><span class="p">,</span>
+            <span class="n">tipo_abrangencia</span><span class="p">,</span>
+            <span class="n">algoritmo_alternativo</span><span class="o">=</span><span class="n">algoritmo_alternativo</span><span class="p">,</span>
+            <span class="n">escopo_de_contrato_externo</span><span class="o">=</span><span class="n">de_contrato_externo</span><span class="p">,</span>
+            <span class="n">eh_perfil_manual</span><span class="o">=</span><span class="n">eh_perfil_manual</span><span class="p">,</span>
+            <span class="n">grupo_codigo</span><span class="o">=</span><span class="n">grupo_codigo</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"login"</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span>
+            <span class="s2">"abrangencia"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">grupo_cargos</span><span class="p">(</span>
+                <span class="n">perfil_guid</span><span class="p">,</span>
+                <span class="n">funcao_exige_cargo</span><span class="o">=</span><span class="n">algoritmo_alternativo</span><span class="p">,</span>
+                <span class="n">eh_grupo_manual</span><span class="o">=</span><span class="n">algoritmo_alternativo</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s2">"idDres"</span><span class="p">:</span> <span class="n">escopo</span><span class="p">[</span><span class="s2">"idDres"</span><span class="p">],</span>
+            <span class="s2">"dres"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"idUes"</span><span class="p">:</span> <span class="n">escopo</span><span class="p">[</span><span class="s2">"idUes"</span><span class="p">],</span>
+            <span class="s2">"ues"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"idTurmas"</span><span class="p">:</span> <span class="n">escopo</span><span class="p">[</span><span class="s2">"idTurmas"</span><span class="p">],</span>
+            <span class="s2">"turmas"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">ues_expandidas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">expandir_ues</span>
+            <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="ow">in</span> <span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_UE</span>
+        <span class="p">):</span>
+            <span class="n">ues_expandidas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expandir_ues</span><span class="p">(</span><span class="n">codigos</span><span class="p">[</span><span class="s2">"idUes"</span><span class="p">],</span> <span class="n">ano</span><span class="p">)</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">"ues"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ues_expandidas</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">expandir_ues</span>
+            <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="ow">in</span> <span class="n">_TIPOS_ABRANGENCIA_DRE_DE_ID_DRES</span>
+        <span class="p">):</span>
+            <span class="n">ues_expandidas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expandir_ues_da_dre</span><span class="p">(</span>
+                <span class="n">_sem_nulos</span><span class="p">(</span><span class="n">codigos</span><span class="p">[</span><span class="s2">"idDres"</span><span class="p">]),</span> <span class="n">tipo_abrangencia</span><span class="p">,</span> <span class="n">ano</span>
+            <span class="p">)</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">"ues"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ues_expandidas</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">expandir_dres</span>
+            <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="ow">in</span> <span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_DRE</span>
+        <span class="p">):</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">"dres"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expandir_dres</span><span class="p">(</span>
+                <span class="n">_sem_nulos</span><span class="p">(</span><span class="n">codigos</span><span class="p">[</span><span class="s2">"idDres"</span><span class="p">]),</span>
+                <span class="n">ues_expandidas</span><span class="p">,</span>
+                <span class="n">tipo_abrangencia</span><span class="p">,</span>
+                <span class="n">ano</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">expandir_turmas</span>
+            <span class="ow">and</span> <span class="n">tipo_abrangencia</span> <span class="ow">in</span> <span class="n">_TIPOS_ABRANGENCIA_QUE_EXPANDEM_TURMA</span>
+        <span class="p">):</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">"turmas"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expandir_turmas</span><span class="p">(</span>
+                <span class="n">_sem_nulos</span><span class="p">(</span><span class="n">codigos</span><span class="p">[</span><span class="s2">"idTurmas"</span><span class="p">]),</span> <span class="n">ano</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">payload</span></div>
+
+
+<div class="viewcode-block" id="AbrangenciaService.usuarios_por_perfil">
+<a class="viewcode-back" href="../../../api.html#apps.abrangencia.services.AbrangenciaService.usuarios_por_perfil">[documentos]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">usuarios_por_perfil</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">dre</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">perfis</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Lista os usuarios lotados na UE, agrupados por login.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ue: Codigo da unidade educacional.</span>
+<span class="sd">            dre: Codigo da DRE; None nao filtra.</span>
+<span class="sd">            perfis: GUIDs dos perfis consultados.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Um registro por usuario. A chave `perfils` (sem o "i") segue</span>
+<span class="sd">            a grafia do contrato consumido pelos sistemas integrados.</span>
+<span class="sd">        """</span>
+        <span class="n">usuarios</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">registro</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_usuarios_por_perfil</span><span class="p">(</span><span class="n">ue</span><span class="p">,</span> <span class="n">dre</span><span class="p">,</span> <span class="n">perfis</span><span class="p">):</span>
+            <span class="n">atual</span> <span class="o">=</span> <span class="n">usuarios</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                <span class="n">registro</span><span class="p">[</span><span class="s2">"usuario_rf"</span><span class="p">],</span>
+                <span class="p">{</span><span class="s2">"usuarioRf"</span><span class="p">:</span> <span class="n">registro</span><span class="p">[</span><span class="s2">"usuario_rf"</span><span class="p">],</span> <span class="s2">"perfils"</span><span class="p">:</span> <span class="p">[]},</span>
+            <span class="p">)</span>
+            <span class="n">atual</span><span class="p">[</span><span class="s2">"perfils"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"perfil"</span><span class="p">:</span> <span class="n">registro</span><span class="p">[</span><span class="s2">"perfil_guid"</span><span class="p">],</span>
+                    <span class="s2">"ues"</span><span class="p">:</span> <span class="n">registro</span><span class="p">[</span><span class="s2">"ues"</span><span class="p">],</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">usuarios</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ano_letivo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Resolve o ano letivo default do ambiente.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `ABRANGENCIA_ANO_LETIVO`, com fallback para o ano corrente.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">ABRANGENCIA_ANO_LETIVO</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_aplicar_nivel_vazio</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">codigos</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Codigos</span><span class="p">],</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">algoritmo_alternativo</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">escopo_de_contrato_externo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">eh_perfil_manual</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">grupo_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Codigos</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Decide quais niveis o tipo de abrangencia projeta.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            codigos: Codigos lidos da MV, por chave do payload.</span>
+<span class="sd">            tipo_abrangencia: Tipo de abrangencia do perfil.</span>
+<span class="sd">            algoritmo_alternativo: tipo_resolucao `DETALHES` e ignora</span>
+<span class="sd">                o nivel de abrangencia que o perfil nao preenche.</span>
+<span class="sd">            escopo_de_contrato_externo: Escopo resolvido pelo contrato</span>
+<span class="sd">                externo, que nao chega a consulta de turmas do POA.</span>
+<span class="sd">            eh_perfil_manual: Flag agregado do perfil.</span>
+<span class="sd">            grupo_codigo: Codigo do grupo do perfil.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Os tres niveis do payload, usando `[]` ou `None` conforme o</span>
+<span class="sd">            tipo de abrangencia.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">algoritmo_alternativo</span><span class="p">:</span>
+            <span class="n">vazios</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_niveis_vazios_detalhes</span><span class="p">(</span><span class="n">tipo_abrangencia</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="n">chave</span><span class="p">:</span> <span class="p">(</span><span class="n">valor</span> <span class="ow">or</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">chave</span> <span class="ow">in</span> <span class="n">vazios</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="k">for</span> <span class="n">chave</span><span class="p">,</span> <span class="n">valor</span> <span class="ow">in</span> <span class="n">codigos</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vazios</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_niveis_vazios_compacta</span><span class="p">(</span>
+                <span class="n">tipo_abrangencia</span><span class="p">,</span>
+                <span class="n">escopo_de_contrato_externo</span><span class="o">=</span><span class="n">escopo_de_contrato_externo</span><span class="p">,</span>
+                <span class="n">eh_perfil_manual</span><span class="o">=</span><span class="n">eh_perfil_manual</span><span class="p">,</span>
+                <span class="n">grupo_codigo</span><span class="o">=</span><span class="n">grupo_codigo</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">chave</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nivel_projetado</span><span class="p">(</span><span class="n">valor</span><span class="p">,</span> <span class="n">chave</span> <span class="ow">in</span> <span class="n">vazios</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">chave</span><span class="p">,</span> <span class="n">valor</span> <span class="ow">in</span> <span class="n">codigos</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_nivel_projetado</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">codigos</span><span class="p">:</span> <span class="n">Codigos</span><span class="p">,</span>
+        <span class="n">sai_vazio</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Codigos</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Escolhe entre `[]` e `None` para um nivel sem codigo.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            codigos: Codigos do nivel.</span>
+<span class="sd">            sai_vazio: Verdadeiro quando o nivel projeta `[]`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Os proprios codigos, ou `[]`/`None` quando nao ha nenhum.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">codigos</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">codigos</span>
+        <span class="k">return</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">sai_vazio</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_niveis_vazios_detalhes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Lista os niveis que saem `[]` no `tipo_resolucao` DETALHES.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tipo_abrangencia: Tipo de abrangencia do perfil.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            As chaves do payload que o tipo de abrangencia projeta.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_NIVEIS_VAZIOS_DETALHES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tipo_abrangencia</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_niveis_vazios_compacta</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">escopo_de_contrato_externo</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">eh_perfil_manual</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">grupo_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Lista os niveis que saem `[]` no `tipo_resolucao` COMPACTA.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tipo_abrangencia: Tipo de abrangencia do perfil.</span>
+<span class="sd">            escopo_de_contrato_externo: Escopo resolvido pelo contrato</span>
+<span class="sd">                externo, que nao chega a consulta de turmas do POA.</span>
+<span class="sd">            eh_perfil_manual: Flag agregado do perfil.</span>
+<span class="sd">            grupo_codigo: Codigo do grupo do perfil.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            As chaves do payload que saem `[]` quando nao ha codigo.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">frozenset</span><span class="p">()</span>
+
+        <span class="n">vazios</span> <span class="o">=</span> <span class="n">_NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">tipo_abrangencia</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">escopo_de_contrato_externo</span>
+        <span class="p">):</span>
+            <span class="n">vazios</span> <span class="o">=</span> <span class="n">vazios</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"idTurmas"</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">DRE</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">eh_perfil_manual</span><span class="p">:</span>
+            <span class="n">vazios</span> <span class="o">=</span> <span class="n">vazios</span> <span class="o">|</span> <span class="n">_NIVEIS_VAZIOS_DRE_NAO_MANUAL</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">escopo_de_contrato_externo</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_e07_ue_mantem_nulo</span><span class="p">(</span>
+            <span class="n">tipo_abrangencia</span><span class="p">,</span>
+            <span class="n">eh_perfil_manual</span><span class="o">=</span><span class="n">eh_perfil_manual</span><span class="p">,</span>
+            <span class="n">grupo_codigo</span><span class="o">=</span><span class="n">grupo_codigo</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">vazios</span> <span class="o">=</span> <span class="n">vazios</span> <span class="o">-</span> <span class="p">{</span><span class="s2">"idUes"</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">vazios</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_e07_ue_mantem_nulo</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">eh_perfil_manual</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">grupo_codigo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Informa se `idUes` vazio sai `null` no tipo de abrangencia UE.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tipo_abrangencia: Abrangencia do perfil.</span>
+<span class="sd">            eh_perfil_manual: Flag agregado do perfil.</span>
+<span class="sd">            grupo_codigo: Grupo do perfil, que a guarda de 241 cita.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Verdadeiro quando o tipo de abrangencia e o grupo mantem</span>
+<span class="sd">            o `null` de 233.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE</span><span class="p">,</span>
+            <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">UE_TURMAS_DISCIPLINAS</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">eh_perfil_manual</span> <span class="ow">or</span> <span class="n">grupo_codigo</span> <span class="o">==</span> <span class="n">GRUPO_COMUNICADOS_UE</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_limitar_dre_unica</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">codigos</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Codigos</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Codigos</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Reduz `idDres` a uma unica DRE em `DETALHES`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            codigos: Codigos lidos da MV, por chave do payload.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Os mesmos codigos, com `idDres` reduzida a no maximo um.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">codigos</span><span class="p">,</span> <span class="s2">"idDres"</span><span class="p">:</span> <span class="n">codigos</span><span class="p">[</span><span class="s2">"idDres"</span><span class="p">][:</span><span class="mi">1</span><span class="p">]}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_escopo_resolvido</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">tipo_resolucao</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Codigos</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Agrupa as linhas de escopo da MV nas tres listas do payload.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            login: RF ou CPF do usuario.</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+<span class="sd">            tipo_resolucao: `COMPACTA` ou `DETALHES`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `idDres`, `idUes` e `idTurmas`, cada uma ordenada e sem</span>
+<span class="sd">            repeticao. Nivel sem linha na MV sai `[]`.</span>
+<span class="sd">        """</span>
+        <span class="n">linhas</span> <span class="o">=</span> <span class="n">AbrangenciaResolvida</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">login</span><span class="o">=</span><span class="n">login</span><span class="p">,</span>
+            <span class="n">perfil_guid</span><span class="o">=</span><span class="n">perfil_guid</span><span class="p">,</span>
+            <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="n">tipo_resolucao</span><span class="o">=</span><span class="n">tipo_resolucao</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span>
+            <span class="s2">"tipo_escopo"</span><span class="p">,</span>
+            <span class="s2">"dre_codigo"</span><span class="p">,</span>
+            <span class="s2">"ue_codigo"</span><span class="p">,</span>
+            <span class="s2">"turma_codigo"</span><span class="p">,</span>
+            <span class="s2">"origem"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">acumulado</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">chave</span><span class="p">:</span> <span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">chave</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_ESCOPO_POR_TIPO</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">tipo_escopo</span><span class="p">,</span> <span class="o">*</span><span class="n">valores</span><span class="p">,</span> <span class="n">origem</span> <span class="ow">in</span> <span class="n">linhas</span><span class="p">:</span>
+            <span class="n">destino</span> <span class="o">=</span> <span class="n">_ESCOPO_POR_TIPO</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tipo_escopo</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">destino</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">chave</span><span class="p">,</span> <span class="n">posicao</span> <span class="o">=</span> <span class="n">destino</span>
+            <span class="n">codigo</span> <span class="o">=</span> <span class="n">valores</span><span class="p">[</span><span class="n">posicao</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">codigo</span><span class="p">:</span>
+                <span class="n">acumulado</span><span class="p">[</span><span class="n">chave</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">codigo</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">chave</span> <span class="o">==</span> <span class="s2">"idUes"</span>
+                <span class="ow">and</span> <span class="n">codigo</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="n">origem</span> <span class="ow">in</span> <span class="n">ORIGENS_UE_POR_EXERCICIO</span>
+            <span class="p">):</span>
+                <span class="n">acumulado</span><span class="p">[</span><span class="n">chave</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">chave</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ordenar_codigos</span><span class="p">(</span><span class="n">valor</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">chave</span><span class="p">,</span> <span class="n">valor</span> <span class="ow">in</span> <span class="n">acumulado</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ordenar_codigos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">codigos</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Codigos</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Ordena os codigos de um nivel, com o nulo a frente.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            codigos: Codigos do nivel, possivelmente com um nulo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Os codigos ordenados, com o nulo a frente quando houver.</span>
+<span class="sd">        """</span>
+        <span class="n">presentes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">codigo</span> <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">codigos</span> <span class="k">if</span> <span class="n">codigo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">ordenados</span><span class="p">:</span> <span class="n">Codigos</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">presentes</span><span class="p">]</span>
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">codigos</span><span class="p">:</span>
+            <span class="n">ordenados</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ordenados</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_dres_da_rede</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Lista as DREs da rede para o tipo SME sem linha na MV.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Codigos das DREs da rede, ordenados.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_unidades</span><span class="p">(</span><span class="n">TIPO_ESCOPO_DRE</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_escopo_veio_de_contrato_externo</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Informa se o escopo compacto veio do contrato externo.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            login: RF ou CPF do usuario.</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Verdadeiro quando ha linha de contrato externo no escopo</span>
+<span class="sd">            compacto do par.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">AbrangenciaResolvida</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">login</span><span class="o">=</span><span class="n">login</span><span class="p">,</span>
+                <span class="n">perfil_guid</span><span class="o">=</span><span class="n">perfil_guid</span><span class="p">,</span>
+                <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+                <span class="n">tipo_resolucao</span><span class="o">=</span><span class="n">TIPO_RESOLUCAO_COMPACTA</span><span class="p">,</span>
+                <span class="n">origem</span><span class="o">=</span><span class="n">_ORIGEM_CONTRATO_EXTERNO</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unidades</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tipo_escopo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">codigos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">somente_sondagem</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Le nome, sigla e pai das unidades da rede, filtradas ou nao.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tipo_escopo: `DRE`, `UE` ou `TURMA`.</span>
+<span class="sd">            codigos: Codigos a resolver. `None` nao filtra (rede inteira);</span>
+<span class="sd">                lista vazia devolve mapa vazio.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+<span class="sd">            somente_sondagem: Restringe a unidades elegiveis a sondagem.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Mapa `codigo -&gt; atributos`. Codigo sem par na MV simplesmente</span>
+<span class="sd">            nao aparece, e e o que faz a expansao se comportar como um</span>
+<span class="sd">            LEFT JOIN.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">codigos</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">codigos</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="n">consulta</span> <span class="o">=</span> <span class="n">Unidade</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">ano_letivo</span><span class="o">=</span><span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="n">tipo_escopo</span><span class="o">=</span><span class="n">tipo_escopo</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">codigos</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">consulta</span> <span class="o">=</span> <span class="n">consulta</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">codigo__in</span><span class="o">=</span><span class="n">codigos</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">somente_sondagem</span><span class="p">:</span>
+            <span class="n">consulta</span> <span class="o">=</span> <span class="n">consulta</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">elegivel_sondagem</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">linha</span><span class="p">[</span><span class="s2">"codigo"</span><span class="p">]):</span> <span class="n">linha</span>
+            <span class="k">for</span> <span class="n">linha</span> <span class="ow">in</span> <span class="n">consulta</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+                <span class="s2">"codigo"</span><span class="p">,</span> <span class="s2">"nome"</span><span class="p">,</span> <span class="s2">"sigla"</span><span class="p">,</span> <span class="s2">"dre_codigo_pai"</span><span class="p">,</span> <span class="s2">"ue_codigo_pai"</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expandir_ues</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">id_ues</span><span class="p">:</span> <span class="n">Codigos</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Monta a lista expandida de UEs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id_ues: UEs do escopo; vazio traz a rede inteira.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Uma entrada por UE com par na MV de unidade, ordenada por</span>
+<span class="sd">            codigo.</span>
+<span class="sd">        """</span>
+        <span class="n">codigos</span> <span class="o">=</span> <span class="n">_sem_nulos</span><span class="p">(</span><span class="n">id_ues</span><span class="p">)</span>
+        <span class="n">unidades</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unidades</span><span class="p">(</span><span class="n">TIPO_ESCOPO_UE</span><span class="p">,</span> <span class="n">codigos</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"codigo"</span><span class="p">:</span> <span class="n">codigo</span><span class="p">,</span>
+                <span class="s2">"codigoDRE"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"dre_codigo_pai"</span><span class="p">],</span>
+                <span class="s2">"nome"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"nome"</span><span class="p">],</span>
+                <span class="s2">"sigla"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"sigla"</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">unidades</span><span class="p">)</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expandir_ues_da_dre</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">id_dres</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Monta a lista de UEs dos tipos de abrangencia que resolvem DRE.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id_dres: DREs do escopo, usadas como filtro.</span>
+<span class="sd">            tipo_abrangencia: Abrangencia do perfil.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Uma entrada por UE da rede cujo pai esta em `id_dres`, ou a</span>
+<span class="sd">            rede inteira no tipo de abrangencia SME.</span>
+<span class="sd">        """</span>
+        <span class="n">unidades</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unidades</span><span class="p">(</span><span class="n">TIPO_ESCOPO_UE</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">)</span>
+        <span class="n">dres</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">id_dres</span> <span class="ow">or</span> <span class="p">())</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"codigo"</span><span class="p">:</span> <span class="n">codigo</span><span class="p">,</span>
+                <span class="s2">"codigoDRE"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"dre_codigo_pai"</span><span class="p">],</span>
+                <span class="s2">"nome"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"nome"</span><span class="p">],</span>
+                <span class="s2">"sigla"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"sigla"</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">unidades</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="o">==</span> <span class="n">TipoAbrangencia</span><span class="o">.</span><span class="n">SME</span>
+            <span class="ow">or</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"dre_codigo_pai"</span><span class="p">]</span> <span class="ow">in</span> <span class="n">dres</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expandir_dres</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">id_dres</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">ues_expandidas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">tipo_abrangencia</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Monta a lista expandida de DREs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id_dres: DREs do escopo.</span>
+<span class="sd">            ues_expandidas: UEs ja expandidas, de que a lista deriva</span>
+<span class="sd">                nos tipos de abrangencia 1 e 5.</span>
+<span class="sd">            tipo_abrangencia: Abrangencia do perfil.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Uma entrada por DRE com par na MV de unidade, ordenada por</span>
+<span class="sd">            codigo.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">tipo_abrangencia</span> <span class="ow">in</span> <span class="n">_TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE</span><span class="p">:</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">ue</span><span class="p">[</span><span class="s2">"codigoDRE"</span><span class="p">]</span> <span class="k">for</span> <span class="n">ue</span> <span class="ow">in</span> <span class="n">ues_expandidas</span> <span class="k">if</span> <span class="n">ue</span><span class="p">[</span><span class="s2">"codigoDRE"</span><span class="p">]}</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">codigos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">id_dres</span><span class="p">))</span>
+
+        <span class="n">unidades</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unidades</span><span class="p">(</span><span class="n">TIPO_ESCOPO_DRE</span><span class="p">,</span> <span class="n">codigos</span><span class="p">,</span> <span class="n">ano_letivo</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"codigoDRE"</span><span class="p">:</span> <span class="n">codigo</span><span class="p">,</span>
+                <span class="s2">"nomeDRE"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"nome"</span><span class="p">],</span>
+                <span class="s2">"siglaDRE"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"sigla"</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">unidades</span><span class="p">)</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_expandir_turmas</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">id_turmas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">ano_letivo</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Monta a lista expandida de turmas, restrita a sondagem.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id_turmas: Turmas do escopo; vazio traz a rede inteira.</span>
+<span class="sd">            ano_letivo: Ano letivo do escopo.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Turmas elegiveis, ordenadas por codigo. Sem nenhuma</span>
+<span class="sd">            elegivel, a lista vazia.</span>
+<span class="sd">        """</span>
+        <span class="n">unidades</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unidades</span><span class="p">(</span>
+            <span class="n">TIPO_ESCOPO_TURMA</span><span class="p">,</span>
+            <span class="n">id_turmas</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">ano_letivo</span><span class="p">,</span>
+            <span class="n">somente_sondagem</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">turmas</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"codigo"</span><span class="p">:</span> <span class="n">codigo</span><span class="p">,</span>
+                <span class="s2">"nome"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"nome"</span><span class="p">],</span>
+                <span class="s2">"codigoEscola"</span><span class="p">:</span> <span class="n">unidades</span><span class="p">[</span><span class="n">codigo</span><span class="p">][</span><span class="s2">"ue_codigo_pai"</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">unidades</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">turmas</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_perfil_com_vinculos</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">funcao_exige_cargo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retorna o perfil com seus cargos e funcoes-atividade.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+<span class="sd">            funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai</span>
+<span class="sd">                sem funcao.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dados do perfil com cargos e funcoes ordenados, ou None</span>
+<span class="sd">            quando o perfil nao existe. Perfil sem vinculo funcional</span>
+<span class="sd">            devolve as duas listas vazias.</span>
+<span class="sd">        """</span>
+        <span class="n">perfil</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">Perfil</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">perfil_guid</span><span class="o">=</span><span class="n">perfil_guid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">values</span><span class="p">(</span>
+                <span class="s2">"perfil_guid"</span><span class="p">,</span>
+                <span class="s2">"grupo_codigo"</span><span class="p">,</span>
+                <span class="s2">"tipo_abrangencia"</span><span class="p">,</span>
+                <span class="s2">"eh_perfil_manual"</span><span class="p">,</span>
+                <span class="s2">"eh_grupo_manual"</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">perfil</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">vinculos</span> <span class="o">=</span> <span class="n">PerfilVinculoFuncional</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">perfil_guid</span><span class="o">=</span><span class="n">perfil_guid</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s2">"tipo"</span><span class="p">,</span> <span class="s2">"codigo"</span><span class="p">)</span>
+
+        <span class="n">cargos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">codigo</span> <span class="k">for</span> <span class="n">tipo</span><span class="p">,</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">vinculos</span> <span class="k">if</span> <span class="n">tipo</span> <span class="o">==</span> <span class="n">_TIPO_CARGO</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">funcoes</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">codigo</span>
+                    <span class="k">for</span> <span class="n">tipo</span><span class="p">,</span> <span class="n">codigo</span> <span class="ow">in</span> <span class="n">vinculos</span>
+                    <span class="k">if</span> <span class="n">tipo</span> <span class="o">==</span> <span class="n">_TIPO_FUNCAO_ATIVIDADE</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">cargos</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">funcao_exige_cargo</span>
+            <span class="k">else</span> <span class="p">[]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">perfil</span><span class="p">,</span> <span class="s2">"cargos"</span><span class="p">:</span> <span class="n">cargos</span><span class="p">,</span> <span class="s2">"funcoes"</span><span class="p">:</span> <span class="n">funcoes</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_manual_do_perfil</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">perfil</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">eh_grupo_manual</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Resolve `ehPerfilManual` pelo repositorio que o endpoint usa.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            perfil: Linha de `public.perfil` ja lida.</span>
+<span class="sd">            eh_grupo_manual: Verdadeiro para o caminho da linha.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            O valor de `ehPerfilManual` do caminho pedido.</span>
+<span class="sd">        """</span>
+        <span class="n">coluna</span> <span class="o">=</span> <span class="s2">"eh_grupo_manual"</span> <span class="k">if</span> <span class="n">eh_grupo_manual</span> <span class="k">else</span> <span class="s2">"eh_perfil_manual"</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">perfil</span><span class="p">[</span><span class="n">coluna</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tipo_abrangencia_do_perfil</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">perfil_guid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Retorna tipo de abrangencia, flag manual e grupo.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            perfil_guid: GUID do perfil consultado.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `tipo_abrangencia`  None quando o perfil nao existe,</span>
+<span class="sd">            `eh_perfil_manual`, o flag agregado e `grupo_codigo`.</span>
+<span class="sd">        """</span>
+        <span class="n">perfil</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">Perfil</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">perfil_guid</span><span class="o">=</span><span class="n">perfil_guid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="s2">"tipo_abrangencia"</span><span class="p">,</span> <span class="s2">"eh_perfil_manual"</span><span class="p">,</span> <span class="s2">"grupo_codigo"</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">perfil</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">perfil</span><span class="p">[</span><span class="s2">"tipo_abrangencia"</span><span class="p">],</span>
+            <span class="nb">bool</span><span class="p">(</span><span class="n">perfil</span><span class="p">[</span><span class="s2">"eh_perfil_manual"</span><span class="p">]),</span>
+            <span class="n">perfil</span><span class="p">[</span><span class="s2">"grupo_codigo"</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_usuarios_por_perfil</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">dre</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">perfis</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Seleciona usuarios pelo filtro e projeta todos os perfis possuidos.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Um registro por par `(login, perfil)`, com as UEs ordenadas.</span>
+<span class="sd">        """</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">UsuarioPorPerfil</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ano_letivo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ano_letivo</span><span class="p">())</span>
+        <span class="n">selecao</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ue_codigo</span><span class="o">=</span><span class="n">ue</span><span class="p">,</span> <span class="n">perfil_guid__in</span><span class="o">=</span><span class="n">perfis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dre</span><span class="p">:</span>
+            <span class="n">selecao</span> <span class="o">=</span> <span class="n">selecao</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">usuario_rf__in</span><span class="o">=</span><span class="n">base</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">dre_codigo</span><span class="o">=</span><span class="n">dre</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="s2">"usuario_rf"</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">logins</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">selecao</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s2">"usuario_rf"</span><span class="p">,</span> <span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">logins</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">agrupado</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">completa</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">usuario_rf__in</span><span class="o">=</span><span class="n">logins</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">login</span><span class="p">,</span> <span class="n">perfil_guid</span><span class="p">,</span> <span class="n">ue_codigo</span> <span class="ow">in</span> <span class="n">completa</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span>
+            <span class="s2">"usuario_rf"</span><span class="p">,</span> <span class="s2">"perfil_guid"</span><span class="p">,</span> <span class="s2">"ue_codigo"</span>
+        <span class="p">):</span>
+            <span class="n">ues</span> <span class="o">=</span> <span class="n">agrupado</span><span class="o">.</span><span class="n">setdefault</span><span class="p">((</span><span class="n">login</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">perfil_guid</span><span class="p">)),</span> <span class="nb">set</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">ue_codigo</span><span class="p">:</span>
+                <span class="n">ues</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ue_codigo</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"usuario_rf"</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span>
+                <span class="s2">"perfil_guid"</span><span class="p">:</span> <span class="n">perfil_guid</span><span class="p">,</span>
+                <span class="s2">"ues"</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ues</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">login</span><span class="p">,</span> <span class="n">perfil_guid</span><span class="p">),</span> <span class="n">ues</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">agrupado</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais .</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

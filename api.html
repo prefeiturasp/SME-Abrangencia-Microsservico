@@ -1,0 +1,1164 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="pt-BR" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referência de código &mdash; SME-Abrangencia-Microsservico</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2346ddef"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=71a39b36"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="genindex.html" />
+    <link rel="search" title="Buscar" href="search.html" />
+    <link rel="prev" title="API" href="controle/api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SME-Abrangencia-Microsservico
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Conteúdo</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="arquitetura/visao_geral.html">Visão Geral</a></li>
+<li class="toctree-l1"><a class="reference internal" href="controle/index.html">Controle</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Referência de código</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-apps.core.api.views">Core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#apps.core.api.views.HealthCheckView"><code class="docutils literal notranslate"><span class="pre">HealthCheckView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.core.api.views.HealthCheckView.authentication_classes"><code class="docutils literal notranslate"><span class="pre">HealthCheckView.authentication_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.core.api.views.HealthCheckView.permission_classes"><code class="docutils literal notranslate"><span class="pre">HealthCheckView.permission_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.core.api.views.HealthCheckView.get"><code class="docutils literal notranslate"><span class="pre">HealthCheckView.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.core.api.views.HealthCheckView.schema"><code class="docutils literal notranslate"><span class="pre">HealthCheckView.schema</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.core.api.serializers.HealthStatusSerializer"><code class="docutils literal notranslate"><span class="pre">HealthStatusSerializer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-apps.autenticacao.api_key">Autenticação</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#apps.autenticacao.api_key.AutenticacaoApiKey"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKey</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.autenticacao.api_key.AutenticacaoApiKey.authenticate"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKey.authenticate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.autenticacao.api_key.AutenticacaoApiKey.authenticate_header"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKey.authenticate_header()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKeyScheme</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.target_class"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKeyScheme.target_class</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.name"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKeyScheme.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.get_security_definition"><code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKeyScheme.get_security_definition()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-apps.abrangencia.models">Abrangência</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.models.Perfil"><code class="docutils literal notranslate"><span class="pre">Perfil</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.perfil_guid"><code class="docutils literal notranslate"><span class="pre">Perfil.perfil_guid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.grupo_codigo"><code class="docutils literal notranslate"><span class="pre">Perfil.grupo_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.nome"><code class="docutils literal notranslate"><span class="pre">Perfil.nome</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.tipo_abrangencia"><code class="docutils literal notranslate"><span class="pre">Perfil.tipo_abrangencia</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.eh_perfil_manual"><code class="docutils literal notranslate"><span class="pre">Perfil.eh_perfil_manual</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.eh_perfil_misto"><code class="docutils literal notranslate"><span class="pre">Perfil.eh_perfil_misto</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.atualizado_em"><code class="docutils literal notranslate"><span class="pre">Perfil.atualizado_em</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.eh_grupo_manual"><code class="docutils literal notranslate"><span class="pre">Perfil.eh_grupo_manual</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.DoesNotExist"><code class="docutils literal notranslate"><span class="pre">Perfil.DoesNotExist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.MultipleObjectsReturned"><code class="docutils literal notranslate"><span class="pre">Perfil.MultipleObjectsReturned</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Perfil.objects"><code class="docutils literal notranslate"><span class="pre">Perfil.objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.pk"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.pk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.perfil_guid"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.perfil_guid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.tipo"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.tipo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.codigo"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.atualizado_em"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.atualizado_em</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.DoesNotExist"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.DoesNotExist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.MultipleObjectsReturned"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.MultipleObjectsReturned</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.PerfilVinculoFuncional.objects"><code class="docutils literal notranslate"><span class="pre">PerfilVinculoFuncional.objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.usuario_abrangencia_id"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.usuario_abrangencia_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.login"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.login</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.perfil_guid"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.perfil_guid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.ano_letivo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.ano_letivo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_resolucao"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.tipo_resolucao</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_escopo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.tipo_escopo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.dre_codigo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.dre_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.ue_codigo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.ue_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.turma_codigo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.turma_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.origem"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.origem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.grupo_codigo"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.grupo_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.grupo_nome"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.grupo_nome</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_abrangencia"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.tipo_abrangencia</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_manual"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.eh_perfil_manual</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_misto"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.eh_perfil_misto</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.DoesNotExist"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.DoesNotExist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.MultipleObjectsReturned"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.MultipleObjectsReturned</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.AbrangenciaResolvida.objects"><code class="docutils literal notranslate"><span class="pre">AbrangenciaResolvida.objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.models.Unidade"><code class="docutils literal notranslate"><span class="pre">Unidade</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.pk"><code class="docutils literal notranslate"><span class="pre">Unidade.pk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.ano_letivo"><code class="docutils literal notranslate"><span class="pre">Unidade.ano_letivo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.tipo_escopo"><code class="docutils literal notranslate"><span class="pre">Unidade.tipo_escopo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.codigo"><code class="docutils literal notranslate"><span class="pre">Unidade.codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.nome"><code class="docutils literal notranslate"><span class="pre">Unidade.nome</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.sigla"><code class="docutils literal notranslate"><span class="pre">Unidade.sigla</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.dre_codigo_pai"><code class="docutils literal notranslate"><span class="pre">Unidade.dre_codigo_pai</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.ue_codigo_pai"><code class="docutils literal notranslate"><span class="pre">Unidade.ue_codigo_pai</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.elegivel_sondagem"><code class="docutils literal notranslate"><span class="pre">Unidade.elegivel_sondagem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.DoesNotExist"><code class="docutils literal notranslate"><span class="pre">Unidade.DoesNotExist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.MultipleObjectsReturned"><code class="docutils literal notranslate"><span class="pre">Unidade.MultipleObjectsReturned</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.Unidade.objects"><code class="docutils literal notranslate"><span class="pre">Unidade.objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.pk"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.pk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.usuario_rf"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.usuario_rf</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.perfil_guid"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.perfil_guid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.ano_letivo"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.ano_letivo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.ue_codigo"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.ue_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.dre_codigo"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.dre_codigo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.DoesNotExist"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.DoesNotExist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.MultipleObjectsReturned"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.MultipleObjectsReturned</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.models.UsuarioPorPerfil.objects"><code class="docutils literal notranslate"><span class="pre">UsuarioPorPerfil.objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.services.AbrangenciaService"><code class="docutils literal notranslate"><span class="pre">AbrangenciaService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.services.AbrangenciaService.grupo_cargos"><code class="docutils literal notranslate"><span class="pre">AbrangenciaService.grupo_cargos()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.services.AbrangenciaService.abrangencia_compacta"><code class="docutils literal notranslate"><span class="pre">AbrangenciaService.abrangencia_compacta()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.services.AbrangenciaService.usuarios_por_perfil"><code class="docutils literal notranslate"><span class="pre">AbrangenciaService.usuarios_por_perfil()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.GrupoCargosSerializer"><code class="docutils literal notranslate"><span class="pre">GrupoCargosSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.DreExpandidaSerializer"><code class="docutils literal notranslate"><span class="pre">DreExpandidaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.UeExpandidaSerializer"><code class="docutils literal notranslate"><span class="pre">UeExpandidaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.TurmaExpandidaSerializer"><code class="docutils literal notranslate"><span class="pre">TurmaExpandidaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.AbrangenciaCompactaSerializer"><code class="docutils literal notranslate"><span class="pre">AbrangenciaCompactaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.PerfilAbrangenciaSerializer"><code class="docutils literal notranslate"><span class="pre">PerfilAbrangenciaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.UsuarioPerfilsAbrangenciaSerializer"><code class="docutils literal notranslate"><span class="pre">UsuarioPerfilsAbrangenciaSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.BuscarUsuariosPerfisSerializer"><code class="docutils literal notranslate"><span class="pre">BuscarUsuariosPerfisSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.serializers.DetalheErroSerializer"><code class="docutils literal notranslate"><span class="pre">DetalheErroSerializer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.PerfilView"><code class="docutils literal notranslate"><span class="pre">PerfilView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.PerfilView.get"><code class="docutils literal notranslate"><span class="pre">PerfilView.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaVigenteView"><code class="docutils literal notranslate"><span class="pre">CompactaVigenteView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaVigenteView.get"><code class="docutils literal notranslate"><span class="pre">CompactaVigenteView.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaDreDetalhesView"><code class="docutils literal notranslate"><span class="pre">CompactaDreDetalhesView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.expandir_dres"><code class="docutils literal notranslate"><span class="pre">CompactaDreDetalhesView.expandir_dres</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.algoritmo_alternativo"><code class="docutils literal notranslate"><span class="pre">CompactaDreDetalhesView.algoritmo_alternativo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.get"><code class="docutils literal notranslate"><span class="pre">CompactaDreDetalhesView.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_dres"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView.expandir_dres</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_ues"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView.expandir_ues</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_turmas"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView.expandir_turmas</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView.algoritmo_alternativo"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView.algoritmo_alternativo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSondagemView.get"><code class="docutils literal notranslate"><span class="pre">CompactaSondagemView.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSemRedisView"><code class="docutils literal notranslate"><span class="pre">CompactaSemRedisView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSemRedisView.algoritmo_alternativo"><code class="docutils literal notranslate"><span class="pre">CompactaSemRedisView.algoritmo_alternativo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.CompactaSemRedisView.get"><code class="docutils literal notranslate"><span class="pre">CompactaSemRedisView.get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apps.abrangencia.api.views.PerfisUsuariosView"><code class="docutils literal notranslate"><span class="pre">PerfisUsuariosView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#apps.abrangencia.api.views.PerfisUsuariosView.post"><code class="docutils literal notranslate"><span class="pre">PerfisUsuariosView.post()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SME-Abrangencia-Microsservico</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Referência de código</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> Ver código-fonte da página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="referencia-de-codigo">
+<h1>Referência de código<a class="headerlink" href="#referencia-de-codigo" title="Link para este cabeçalho"></a></h1>
+<p>Esta página publica as docstrings dos principais módulos do projeto. Detalhes
+de endpoints, status HTTP e contratos externos devem permanecer no OpenAPI ou
+em páginas técnicas específicas.</p>
+<section id="module-apps.core.api.views">
+<span id="core"></span><h2>Core<a class="headerlink" href="#module-apps.core.api.views" title="Link para este cabeçalho"></a></h2>
+<p>Views da API da aplicação core.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.core.api.views.HealthCheckView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.core.api.views.</span></span><span class="sig-name descname"><span class="pre">HealthCheckView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/core/api/views.html#HealthCheckView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.core.api.views.HealthCheckView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>Disponibiliza o endpoint de verificação de saúde da aplicação.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.core.api.views.HealthCheckView.authentication_classes">
+<span class="sig-name descname"><span class="pre">authentication_classes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#apps.core.api.views.HealthCheckView.authentication_classes" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.core.api.views.HealthCheckView.permission_classes">
+<span class="sig-name descname"><span class="pre">permission_classes</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;class</span> <span class="pre">'rest_framework.permissions.AllowAny'&gt;]</span></em><a class="headerlink" href="#apps.core.api.views.HealthCheckView.permission_classes" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.core.api.views.HealthCheckView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/core/api/views.html#HealthCheckView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.core.api.views.HealthCheckView.get" title="Link para esta definição"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>Request</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.core.api.views.HealthCheckView.schema">
+<span class="sig-name descname"><span class="pre">schema</span></span><a class="headerlink" href="#apps.core.api.views.HealthCheckView.schema" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<p id="module-apps.core.api.serializers">Serializers base para todos os apps do core.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.core.api.serializers.HealthStatusSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.core.api.serializers.</span></span><span class="sig-name descname"><span class="pre">HealthStatusSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/core/api/serializers.html#HealthStatusSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.core.api.serializers.HealthStatusSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Contrato do health check.</p>
+<p><cite>degraded</cite>/<cite>unhealthy</cite> estão no contrato para o dia em que o endpoint
+passar a checar dependências reais (banco, por exemplo); hoje a view
+só emite <cite>healthy</cite>.</p>
+</dd></dl>
+
+</section>
+<section id="module-apps.autenticacao.api_key">
+<span id="autenticacao"></span><h2>Autenticação<a class="headerlink" href="#module-apps.autenticacao.api_key" title="Link para este cabeçalho"></a></h2>
+<p>Autenticação por API Key para os endpoints do domínio Abrangência.</p>
+<p>Mesmo padrão usado nos demais microsserviços da plataforma
+SME-Identidade, para manter um único mecanismo de autenticação de
+serviço a serviço.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.autenticacao.api_key.AutenticacaoApiKey">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.autenticacao.api_key.</span></span><span class="sig-name descname"><span class="pre">AutenticacaoApiKey</span></span><a class="reference internal" href="_modules/apps/autenticacao/api_key.html#AutenticacaoApiKey"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.autenticacao.api_key.AutenticacaoApiKey" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseAuthentication</span></code></p>
+<p>Autentica requisições via API Key no header configurado.</p>
+<p>A chave é comparada com <code class="docutils literal notranslate"><span class="pre">settings.API_KEY</span></code>.
+O header utilizado é definido por <code class="docutils literal notranslate"><span class="pre">settings.API_KEY_HEADER</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.autenticacao.api_key.AutenticacaoApiKey.authenticate">
+<span class="sig-name descname"><span class="pre">authenticate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/autenticacao/api_key.html#AutenticacaoApiKey.authenticate"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.autenticacao.api_key.AutenticacaoApiKey.authenticate" title="Link para esta definição"></a></dt>
+<dd><p>Retorna <cite>None</cite> sem header — outro backend pode tentar depois.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Levanta<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AuthenticationFailed</strong> – Header presente com chave inválida.</p>
+</dd>
+<dt class="field-even">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>request</strong> (<em>Request</em>)</p>
+</dd>
+<dt class="field-odd">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[_UsuarioApiKey, None] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.autenticacao.api_key.AutenticacaoApiKey.authenticate_header">
+<span class="sig-name descname"><span class="pre">authenticate_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/autenticacao/api_key.html#AutenticacaoApiKey.authenticate_header"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.autenticacao.api_key.AutenticacaoApiKey.authenticate_header" title="Link para esta definição"></a></dt>
+<dd><p>Retorna o nome do header de autenticação esperado.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>Request</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p id="module-apps.autenticacao.schema">Integração da AutenticacaoApiKey com o schema OpenAPI (drf-spectacular).</p>
+<p>Sem esta extensão, o drf-spectacular ignora silenciosamente o esquema de
+segurança de <code class="docutils literal notranslate"><span class="pre">AutenticacaoApiKey</span></code> e o Swagger UI não exibe o campo de
+API Key para os endpoints protegidos.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.autenticacao.schema.AutenticacaoApiKeyScheme">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.autenticacao.schema.</span></span><span class="sig-name descname"><span class="pre">AutenticacaoApiKeyScheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/autenticacao/schema.html#AutenticacaoApiKeyScheme"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">OpenApiAuthenticationExtension</span></code></p>
+<p>Declara o esquema de segurança da AutenticacaoApiKey.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.autenticacao.schema.AutenticacaoApiKeyScheme.target_class">
+<span class="sig-name descname"><span class="pre">target_class</span></span><a class="headerlink" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.target_class" title="Link para esta definição"></a></dt>
+<dd><p>apelido de <a class="reference internal" href="#apps.autenticacao.api_key.AutenticacaoApiKey" title="apps.autenticacao.api_key.AutenticacaoApiKey"><code class="xref py py-class docutils literal notranslate"><span class="pre">AutenticacaoApiKey</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.autenticacao.schema.AutenticacaoApiKeyScheme.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ApiKey'</span></em><a class="headerlink" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.name" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.autenticacao.schema.AutenticacaoApiKeyScheme.get_security_definition">
+<span class="sig-name descname"><span class="pre">get_security_definition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auto_schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/autenticacao/schema.html#AutenticacaoApiKeyScheme.get_security_definition"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.autenticacao.schema.AutenticacaoApiKeyScheme.get_security_definition" title="Link para esta definição"></a></dt>
+<dd><p>Descreve o header de API Key esperado pelo Swagger UI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>auto_schema</strong> (<em>Any</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-apps.abrangencia.models">
+<span id="abrangencia"></span><h2>Abrangência<a class="headerlink" href="#module-apps.abrangencia.models" title="Link para este cabeçalho"></a></h2>
+<p>Modelos de leitura do dominio Abrangencia.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.models.</span></span><span class="sig-name descname"><span class="pre">Perfil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/models.html#Perfil"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.models.Perfil" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModeloBase</span></code></p>
+<p>Perfil com o tipo de abrangencia que ele resolve.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.perfil_guid">
+<span class="sig-name descname"><span class="pre">perfil_guid</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.perfil_guid" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.grupo_codigo">
+<span class="sig-name descname"><span class="pre">grupo_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.grupo_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.nome">
+<span class="sig-name descname"><span class="pre">nome</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.nome" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.tipo_abrangencia">
+<span class="sig-name descname"><span class="pre">tipo_abrangencia</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.tipo_abrangencia" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.eh_perfil_manual">
+<span class="sig-name descname"><span class="pre">eh_perfil_manual</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.eh_perfil_manual" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.eh_perfil_misto">
+<span class="sig-name descname"><span class="pre">eh_perfil_misto</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.eh_perfil_misto" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.atualizado_em">
+<span class="sig-name descname"><span class="pre">atualizado_em</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.atualizado_em" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.eh_grupo_manual">
+<span class="sig-name descname"><span class="pre">eh_grupo_manual</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.eh_grupo_manual" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.DoesNotExist">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.DoesNotExist" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectDoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.MultipleObjectsReturned">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#apps.abrangencia.models.Perfil.MultipleObjectsReturned" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Perfil.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;django.db.models.manager.Manager</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#apps.abrangencia.models.Perfil.objects" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.models.</span></span><span class="sig-name descname"><span class="pre">PerfilVinculoFuncional</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/models.html#PerfilVinculoFuncional"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModeloBase</span></code></p>
+<p>Cargo ou funcao-atividade que concede um perfil.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.pk">
+<span class="sig-name descname"><span class="pre">pk</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.pk" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.perfil_guid">
+<span class="sig-name descname"><span class="pre">perfil_guid</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.perfil_guid" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.tipo">
+<span class="sig-name descname"><span class="pre">tipo</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.tipo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.codigo">
+<span class="sig-name descname"><span class="pre">codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.atualizado_em">
+<span class="sig-name descname"><span class="pre">atualizado_em</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.atualizado_em" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.DoesNotExist">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.DoesNotExist" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectDoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.MultipleObjectsReturned">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.MultipleObjectsReturned" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.PerfilVinculoFuncional.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;django.db.models.manager.Manager</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#apps.abrangencia.models.PerfilVinculoFuncional.objects" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.models.</span></span><span class="sig-name descname"><span class="pre">AbrangenciaResolvida</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/models.html#AbrangenciaResolvida"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModeloBase</span></code></p>
+<p>Uma linha de escopo ja filtrada pelo perfil.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.usuario_abrangencia_id">
+<span class="sig-name descname"><span class="pre">usuario_abrangencia_id</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.usuario_abrangencia_id" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.login">
+<span class="sig-name descname"><span class="pre">login</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.login" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.perfil_guid">
+<span class="sig-name descname"><span class="pre">perfil_guid</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.perfil_guid" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.ano_letivo">
+<span class="sig-name descname"><span class="pre">ano_letivo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.ano_letivo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.tipo_resolucao">
+<span class="sig-name descname"><span class="pre">tipo_resolucao</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_resolucao" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.tipo_escopo">
+<span class="sig-name descname"><span class="pre">tipo_escopo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_escopo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.dre_codigo">
+<span class="sig-name descname"><span class="pre">dre_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.dre_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.ue_codigo">
+<span class="sig-name descname"><span class="pre">ue_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.ue_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.turma_codigo">
+<span class="sig-name descname"><span class="pre">turma_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.turma_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.origem">
+<span class="sig-name descname"><span class="pre">origem</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.origem" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.grupo_codigo">
+<span class="sig-name descname"><span class="pre">grupo_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.grupo_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.grupo_nome">
+<span class="sig-name descname"><span class="pre">grupo_nome</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.grupo_nome" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.tipo_abrangencia">
+<span class="sig-name descname"><span class="pre">tipo_abrangencia</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.tipo_abrangencia" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_manual">
+<span class="sig-name descname"><span class="pre">eh_perfil_manual</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_manual" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_misto">
+<span class="sig-name descname"><span class="pre">eh_perfil_misto</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.eh_perfil_misto" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.DoesNotExist">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.DoesNotExist" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectDoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.MultipleObjectsReturned">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.MultipleObjectsReturned" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.AbrangenciaResolvida.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;django.db.models.manager.Manager</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#apps.abrangencia.models.AbrangenciaResolvida.objects" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.models.</span></span><span class="sig-name descname"><span class="pre">Unidade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/models.html#Unidade"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.models.Unidade" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModeloBase</span></code></p>
+<p>Nome, sigla e vinculo de uma unidade, por ano e tipo de escopo.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.pk">
+<span class="sig-name descname"><span class="pre">pk</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.pk" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.ano_letivo">
+<span class="sig-name descname"><span class="pre">ano_letivo</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.ano_letivo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.tipo_escopo">
+<span class="sig-name descname"><span class="pre">tipo_escopo</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.tipo_escopo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.codigo">
+<span class="sig-name descname"><span class="pre">codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.nome">
+<span class="sig-name descname"><span class="pre">nome</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.nome" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.sigla">
+<span class="sig-name descname"><span class="pre">sigla</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.sigla" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.dre_codigo_pai">
+<span class="sig-name descname"><span class="pre">dre_codigo_pai</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.dre_codigo_pai" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.ue_codigo_pai">
+<span class="sig-name descname"><span class="pre">ue_codigo_pai</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.ue_codigo_pai" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.elegivel_sondagem">
+<span class="sig-name descname"><span class="pre">elegivel_sondagem</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.elegivel_sondagem" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.DoesNotExist">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.DoesNotExist" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectDoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.MultipleObjectsReturned">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#apps.abrangencia.models.Unidade.MultipleObjectsReturned" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.Unidade.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;django.db.models.manager.Manager</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#apps.abrangencia.models.Unidade.objects" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.models.</span></span><span class="sig-name descname"><span class="pre">UsuarioPorPerfil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/models.html#UsuarioPorPerfil"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ModeloBase</span></code></p>
+<p>Usuario vigente em um perfil, por ano, UE e DRE.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.pk">
+<span class="sig-name descname"><span class="pre">pk</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.pk" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.usuario_rf">
+<span class="sig-name descname"><span class="pre">usuario_rf</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.usuario_rf" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.perfil_guid">
+<span class="sig-name descname"><span class="pre">perfil_guid</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.perfil_guid" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.ano_letivo">
+<span class="sig-name descname"><span class="pre">ano_letivo</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.ano_letivo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.ue_codigo">
+<span class="sig-name descname"><span class="pre">ue_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.ue_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.dre_codigo">
+<span class="sig-name descname"><span class="pre">dre_codigo</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.dre_codigo" title="Link para esta definição"></a></dt>
+<dd><p>A wrapper for a deferred-loading field. When the value is read from this
+object the first time, the query is executed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.DoesNotExist">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.DoesNotExist" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectDoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.MultipleObjectsReturned">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.MultipleObjectsReturned" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.models.UsuarioPorPerfil.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;django.db.models.manager.Manager</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#apps.abrangencia.models.UsuarioPorPerfil.objects" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<p id="module-apps.abrangencia.services">Servicos do dominio Abrangencia.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.services.AbrangenciaService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.services.</span></span><span class="sig-name descname"><span class="pre">AbrangenciaService</span></span><a class="reference internal" href="_modules/apps/abrangencia/services.html#AbrangenciaService"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.services.AbrangenciaService" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Servico responsavel pelas operacoes do dominio Abrangencia.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.services.AbrangenciaService.grupo_cargos">
+<span class="sig-name descname"><span class="pre">grupo_cargos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perfil_guid</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">funcao_exige_cargo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eh_grupo_manual</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/services.html#AbrangenciaService.grupo_cargos"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.services.AbrangenciaService.grupo_cargos" title="Link para esta definição"></a></dt>
+<dd><p>Monta o payload de perfil com seus cargos e funcoes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>perfil_guid</strong> – GUID do perfil consultado.</p></li>
+<li><p><strong>funcao_exige_cargo</strong> – Quando verdadeiro, perfil sem cargo sai
+sem funcao  ver <cite>_perfil_com_vinculos</cite>.</p></li>
+<li><p><strong>eh_grupo_manual</strong> – Informa se o grupo do perfil e manual.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Payload do perfil, ou None quando ele nao existe.</p>
+</dd>
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>perfil_guid</strong> (<em>str</em>)</p></li>
+<li><p><strong>funcao_exige_cargo</strong> (<em>bool</em>)</p></li>
+<li><p><strong>eh_grupo_manual</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.services.AbrangenciaService.abrangencia_compacta">
+<span class="sig-name descname"><span class="pre">abrangencia_compacta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">login</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perfil_guid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ano_letivo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Separador de parâmetros somente-nomeados (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">expandir_dres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expandir_ues</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expandir_turmas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algoritmo_alternativo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/services.html#AbrangenciaService.abrangencia_compacta"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.services.AbrangenciaService.abrangencia_compacta" title="Link para esta definição"></a></dt>
+<dd><p>Monta o payload de escopo compacto de um usuario em um perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>login</strong> – RF ou CPF do usuario.</p></li>
+<li><p><strong>perfil_guid</strong> – GUID do perfil consultado.</p></li>
+<li><p><strong>ano_letivo</strong> – Ano letivo; None usa <cite>ABRANGENCIA_ANO_LETIVO</cite>.</p></li>
+<li><p><strong>expandir_dres</strong> – Preenche <cite>dres</cite>.</p></li>
+<li><p><strong>expandir_ues</strong> – Preenche <cite>ues</cite>.</p></li>
+<li><p><strong>expandir_turmas</strong> – Preenche <cite>turmas</cite>, restritas a sondagem.</p></li>
+<li><p><strong>algoritmo_alternativo</strong> – Le as linhas de <cite>tipo_resolucao</cite>
+<cite>DETALHES</cite> em vez das de <cite>COMPACTA</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Payload com as oito chaves do contrato, sempre presentes.
+Campo nao expandido sai <cite>None</cite>, nunca <cite>[]</cite>.</p>
+</dd>
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>login</strong> (<em>str</em>)</p></li>
+<li><p><strong>perfil_guid</strong> (<em>str</em>)</p></li>
+<li><p><strong>ano_letivo</strong> (<em>int</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>expandir_dres</strong> (<em>bool</em>)</p></li>
+<li><p><strong>expandir_ues</strong> (<em>bool</em>)</p></li>
+<li><p><strong>expandir_turmas</strong> (<em>bool</em>)</p></li>
+<li><p><strong>algoritmo_alternativo</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, <em>Any</em>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.services.AbrangenciaService.usuarios_por_perfil">
+<span class="sig-name descname"><span class="pre">usuarios_por_perfil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perfis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/services.html#AbrangenciaService.usuarios_por_perfil"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.services.AbrangenciaService.usuarios_por_perfil" title="Link para esta definição"></a></dt>
+<dd><p>Lista os usuarios lotados na UE, agrupados por login.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ue</strong> – Codigo da unidade educacional.</p></li>
+<li><p><strong>dre</strong> – Codigo da DRE; None nao filtra.</p></li>
+<li><p><strong>perfis</strong> – GUIDs dos perfis consultados.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Retorna<span class="colon">:</span></dt>
+<dd class="field-even"><p>Um registro por usuario. A chave <cite>perfils</cite> (sem o “i”) segue
+a grafia do contrato consumido pelos sistemas integrados.</p>
+</dd>
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ue</strong> (<em>str</em>)</p></li>
+<li><p><strong>dre</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>perfis</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[dict[str, <em>Any</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p id="module-apps.abrangencia.serializers">Serializers do domínio Abrangência.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.GrupoCargosSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">GrupoCargosSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#GrupoCargosSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.GrupoCargosSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa o perfil e os vínculos funcionais que o concedem.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.DreExpandidaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">DreExpandidaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#DreExpandidaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.DreExpandidaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa detalhes da DRE.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.UeExpandidaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">UeExpandidaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#UeExpandidaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.UeExpandidaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa detalhes da UE.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.TurmaExpandidaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">TurmaExpandidaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#TurmaExpandidaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.TurmaExpandidaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa detalhes da turma.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.AbrangenciaCompactaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">AbrangenciaCompactaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#AbrangenciaCompactaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.AbrangenciaCompactaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa o escopo de um usuário em um perfil.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.PerfilAbrangenciaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">PerfilAbrangenciaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#PerfilAbrangenciaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.PerfilAbrangenciaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa um perfil do usuário e as UEs em que ele o exerce.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.UsuarioPerfilsAbrangenciaSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">UsuarioPerfilsAbrangenciaSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#UsuarioPerfilsAbrangenciaSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.UsuarioPerfilsAbrangenciaSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Representa um usuário e seus perfis na UE consultada.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.BuscarUsuariosPerfisSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">BuscarUsuariosPerfisSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#BuscarUsuariosPerfisSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.BuscarUsuariosPerfisSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Valida o corpo da busca de usuários por perfil.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.serializers.DetalheErroSerializer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.serializers.</span></span><span class="sig-name descname"><span class="pre">DetalheErroSerializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/serializers.html#DetalheErroSerializer"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.serializers.DetalheErroSerializer" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">Serializer</span></code></p>
+<p>Corpo de erro genérico, usado nas respostas 400 deste domínio.</p>
+</dd></dl>
+
+<p id="module-apps.abrangencia.api.views">Views do domínio Abrangência.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.PerfilView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">PerfilView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#PerfilView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.PerfilView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>Consulta isolada de um perfil, sem depender de um usuário.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.PerfilView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_perfil</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#PerfilView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.PerfilView.get" title="Link para esta definição"></a></dt>
+<dd><p>Retorna os vínculos funcionais e a abrangência do perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>_request</strong> (<em>Request</em>)</p></li>
+<li><p><strong>id_perfil</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaVigenteView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">CompactaVigenteView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaVigenteView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaVigenteView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CompactaBaseView</span></code></p>
+<p>Serve escopo vigente, sem expandir nenhuma lista.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaVigenteView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_perfil</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaVigenteView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaVigenteView.get" title="Link para esta definição"></a></dt>
+<dd><p>Retorna as DREs, UEs e turmas a partir do login e perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<em>Request</em>)</p></li>
+<li><p><strong>login</strong> (<em>str</em>)</p></li>
+<li><p><strong>id_perfil</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaDreDetalhesView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">CompactaDreDetalhesView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaDreDetalhesView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaDreDetalhesView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CompactaBaseView</span></code></p>
+<p>Serve escopo alternativo com a lista de DREs expandida.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaDreDetalhesView.expandir_dres">
+<span class="sig-name descname"><span class="pre">expandir_dres</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.expandir_dres" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaDreDetalhesView.algoritmo_alternativo">
+<span class="sig-name descname"><span class="pre">algoritmo_alternativo</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.algoritmo_alternativo" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaDreDetalhesView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_perfil</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaDreDetalhesView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaDreDetalhesView.get" title="Link para esta definição"></a></dt>
+<dd><p>Retorna detalhes de DREs a partir do login e perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<em>Request</em>)</p></li>
+<li><p><strong>login</strong> (<em>str</em>)</p></li>
+<li><p><strong>id_perfil</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">CompactaSondagemView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaSondagemView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CompactaBaseView</span></code></p>
+<p>Serve escopo alternativo com as três coleções expandidas.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView.expandir_dres">
+<span class="sig-name descname"><span class="pre">expandir_dres</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_dres" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView.expandir_ues">
+<span class="sig-name descname"><span class="pre">expandir_ues</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_ues" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView.expandir_turmas">
+<span class="sig-name descname"><span class="pre">expandir_turmas</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView.expandir_turmas" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView.algoritmo_alternativo">
+<span class="sig-name descname"><span class="pre">algoritmo_alternativo</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView.algoritmo_alternativo" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSondagemView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_perfil</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaSondagemView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSondagemView.get" title="Link para esta definição"></a></dt>
+<dd><p>Retorna turmas elegíveis para sondagem do login e perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<em>Request</em>)</p></li>
+<li><p><strong>login</strong> (<em>str</em>)</p></li>
+<li><p><strong>id_perfil</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSemRedisView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">CompactaSemRedisView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaSemRedisView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSemRedisView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">_CompactaBaseView</span></code></p>
+<p>Serve escopo alternativo, sem expandir nenhuma lista.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSemRedisView.algoritmo_alternativo">
+<span class="sig-name descname"><span class="pre">algoritmo_alternativo</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSemRedisView.algoritmo_alternativo" title="Link para esta definição"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.CompactaSemRedisView.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">login</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_perfil</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#CompactaSemRedisView.get"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.CompactaSemRedisView.get" title="Link para esta definição"></a></dt>
+<dd><p>Retorna as DREs, UEs e turmas a partir do login e perfil.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<em>Request</em>)</p></li>
+<li><p><strong>login</strong> (<em>str</em>)</p></li>
+<li><p><strong>id_perfil</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.PerfisUsuariosView">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">apps.abrangencia.api.views.</span></span><span class="sig-name descname"><span class="pre">PerfisUsuariosView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#PerfisUsuariosView"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.PerfisUsuariosView" title="Link para esta definição"></a></dt>
+<dd><p>Base: <code class="xref py py-class docutils literal notranslate"><span class="pre">APIView</span></code></p>
+<p>Lista usuários e seus perfis a partir de uma UE e DRE.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="apps.abrangencia.api.views.PerfisUsuariosView.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/apps/abrangencia/api/views.html#PerfisUsuariosView.post"><span class="viewcode-link"><span class="pre">[código-fonte]</span></span></a><a class="headerlink" href="#apps.abrangencia.api.views.PerfisUsuariosView.post" title="Link para esta definição"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parâmetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>Request</em>)</p>
+</dd>
+<dt class="field-even">Tipo de retorno<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Response</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p id="module-apps.abrangencia.api.urls">Rotas do domínio Abrangência.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Rodapé">
+        <a href="controle/api.html" class="btn btn-neutral float-left" title="API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais .</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

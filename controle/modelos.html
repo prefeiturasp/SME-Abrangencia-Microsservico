@@ -1,0 +1,281 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="pt-BR" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modelos &mdash; SME-Abrangencia-Microsservico</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2346ddef"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/translations.js?v=71a39b36"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Buscar" href="../search.html" />
+    <link rel="next" title="API" href="api.html" />
+    <link rel="prev" title="Controle" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SME-Abrangencia-Microsservico
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Conteúdo</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../arquitetura/visao_geral.html">Visão Geral</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Controle</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Modelos</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#relacionamento-entre-os-modelos">Relacionamento entre os modelos</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#perfil">Perfil</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#perfilvinculofuncional">PerfilVinculoFuncional</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usuarioabrangencia">UsuarioAbrangencia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#abrangenciacompacta">AbrangenciaCompacta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#openapi">OpenAPI</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">Referência de código</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SME-Abrangencia-Microsservico</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Controle</a></li>
+      <li class="breadcrumb-item active">Modelos</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/controle/modelos.md.txt" rel="nofollow"> Ver código-fonte da página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="modelos">
+<h1>Modelos<a class="headerlink" href="#modelos" title="Link para este cabeçalho"></a></h1>
+<p>Esta seção descreve os modelos de leitura do <strong>SME-Abrangencia-Microsservico</strong>. Nenhum é gerenciado pelo Django (<code class="docutils literal notranslate"><span class="pre">managed</span> <span class="pre">=</span> <span class="pre">False</span></code>): o schema pertence ao pipeline <code class="docutils literal notranslate"><span class="pre">sme-airflow</span></code>, versionado por Flyway — este serviço nunca gera migration para essas tabelas.</p>
+<section id="relacionamento-entre-os-modelos">
+<h2>Relacionamento entre os modelos<a class="headerlink" href="#relacionamento-entre-os-modelos" title="Link para este cabeçalho"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Perfil ──────────► PerfilVinculoFuncional
+   │
+   └──────────────► AbrangenciaCompacta (materialized view)
+
+UsuarioAbrangencia (fato granular, com origem)
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="perfil">
+<h1>Perfil<a class="headerlink" href="#perfil" title="Link para este cabeçalho"></a></h1>
+<p>Perfil do CoreSSO, com o ramo de abrangência (<code class="docutils literal notranslate"><span class="pre">TipoAbrangencia</span></code>) que ele resolve.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Campo</p></th>
+<th class="head"><p>Tipo</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">perfil_guid</span></code></p></td>
+<td><p>UUID</p></td>
+<td><p>Identificador do perfil (PK).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">grupo_codigo</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>Código do grupo do legado.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nome</span></code></p></td>
+<td><p>Text</p></td>
+<td><p>Nome do perfil.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tipo_abrangencia</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>Ramo de <code class="docutils literal notranslate"><span class="pre">TipoAbrangencia</span></code> que decide a forma do escopo.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">eh_perfil_manual</span></code></p></td>
+<td><p>Boolean</p></td>
+<td><p>Indica perfil de concessão manual.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">eh_perfil_misto</span></code></p></td>
+<td><p>Boolean</p></td>
+<td><p>Indica perfil misto.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="perfilvinculofuncional">
+<h1>PerfilVinculoFuncional<a class="headerlink" href="#perfilvinculofuncional" title="Link para este cabeçalho"></a></h1>
+<p>Cargo ou função-atividade que concede um perfil. Um perfil pode ser concedido por vários cargos/funções — não é uma relação 1:1.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Campo</p></th>
+<th class="head"><p>Tipo</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">perfil_guid</span></code></p></td>
+<td><p>UUID</p></td>
+<td><p>Perfil concedido (parte da PK composta).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tipo</span></code></p></td>
+<td><p>Text</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CARGO</span></code> ou <code class="docutils literal notranslate"><span class="pre">FUNCAO_ATIVIDADE</span></code> (parte da PK composta).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">codigo</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>Código do cargo/função (parte da PK composta).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="usuarioabrangencia">
+<h1>UsuarioAbrangencia<a class="headerlink" href="#usuarioabrangencia" title="Link para este cabeçalho"></a></h1>
+<p>Fato de abrangência: um nível de escopo de um usuário, por origem. Carrega a <code class="docutils literal notranslate"><span class="pre">origem</span></code> que o produziu, o que permite restringir consultas a determinadas origens (ex.: só lotação, não atribuição de aula).</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Campo</p></th>
+<th class="head"><p>Tipo</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">login</span></code></p></td>
+<td><p>Text</p></td>
+<td><p>RF ou CPF do usuário.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">perfil_guid</span></code></p></td>
+<td><p>UUID</p></td>
+<td><p>Perfil ao qual o registro pertence.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ano_letivo</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>Ano letivo do escopo.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dre_codigo</span></code> / <code class="docutils literal notranslate"><span class="pre">ue_codigo</span></code> / <code class="docutils literal notranslate"><span class="pre">turma_codigo</span></code></p></td>
+<td><p>Text</p></td>
+<td><p>Nível territorial do registro.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">origem</span></code></p></td>
+<td><p>Text</p></td>
+<td><p>Fonte do dado (ex. <code class="docutils literal notranslate"><span class="pre">LOTACAO_CARGO</span></code>, <code class="docutils literal notranslate"><span class="pre">ATRIBUICAO_AULA</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vigente</span></code></p></td>
+<td><p>Boolean</p></td>
+<td><p>Se o vínculo está ativo.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elegivel_sondagem</span></code></p></td>
+<td><p>Boolean</p></td>
+<td><p>Se a turma entra nas consultas de sondagem.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="abrangenciacompacta">
+<h1>AbrangenciaCompacta<a class="headerlink" href="#abrangenciacompacta" title="Link para este cabeçalho"></a></h1>
+<p>Materialized view: escopo agregado de <code class="docutils literal notranslate"><span class="pre">(login,</span> <span class="pre">perfil_guid,</span> <span class="pre">ano_letivo)</span></code>, com os arrays de DREs/UEs/turmas já agregados por dois algoritmos concorrentes (padrão e alternativo). É a fonte dos endpoints <code class="docutils literal notranslate"><span class="pre">compacta-*</span></code>.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Campo</p></th>
+<th class="head"><p>Tipo</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">login</span></code>, <code class="docutils literal notranslate"><span class="pre">perfil_guid</span></code>, <code class="docutils literal notranslate"><span class="pre">ano_letivo</span></code></p></td>
+<td><p>—</p></td>
+<td><p>Chave composta (PK).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">id_dres</span></code>, <code class="docutils literal notranslate"><span class="pre">id_ues</span></code>, <code class="docutils literal notranslate"><span class="pre">id_turmas</span></code></p></td>
+<td><p>Array de texto</p></td>
+<td><p>Escopo do algoritmo padrão (E-07).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id_ues_alternativo</span></code>, <code class="docutils literal notranslate"><span class="pre">id_turmas_alternativo</span></code></p></td>
+<td><p>Array de texto</p></td>
+<td><p>Escopo do algoritmo alternativo (E-08/E-09/E-10).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">id_ues_detalhaveis</span></code></p></td>
+<td><p>Array de texto</p></td>
+<td><p>Base para expansão de nomes em E-09.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id_turmas_poa</span></code></p></td>
+<td><p>Array de texto</p></td>
+<td><p>Turmas da origem POA, exceção de perfis POA no ramo UE.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Rodapé">
+        <a href="index.html" class="btn btn-neutral float-left" title="Controle" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API" accesskey="n" rel="next">Próximo <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais .</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
