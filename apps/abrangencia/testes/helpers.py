@@ -8,7 +8,7 @@ from apps.abrangencia.constants import (
 from apps.abrangencia.models import AbrangenciaResolvida, Unidade
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
-_LOGIN = "5059151"
+_LOGIN = "9999001"
 _ANO = 2026
 
 

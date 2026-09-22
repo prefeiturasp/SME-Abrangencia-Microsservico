@@ -19,7 +19,7 @@ from apps.abrangencia.testes.helpers import (
 
 _API_KEY = "chave-de-teste"
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
-_LOGIN = "5059151"
+_LOGIN = "9999001"
 _ANO = 2026
 
 _BASE = "/api/abrangencia"
@@ -450,7 +450,7 @@ class TestPerfisUsuariosView(TestCase):
             (cj, ""),
         ]:
             UsuarioPorPerfil.objects.create(
-                usuario_rf="7811110",
+                usuario_rf="9999002",
                 perfil_guid=guid,
                 ano_letivo=_ANO,
                 ue_codigo=ue,
@@ -466,7 +466,7 @@ class TestPerfisUsuariosView(TestCase):
             resposta.json(),
             [
                 {
-                    "usuarioRf": "7811110",
+                    "usuarioRf": "9999002",
                     "perfils": [
                         {"perfil": cp, "ues": ["019715"]},
                         {"perfil": professor, "ues": ["019715"]},

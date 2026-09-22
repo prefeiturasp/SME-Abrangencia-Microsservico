@@ -13,7 +13,7 @@ from apps.abrangencia.testes.helpers import (
 )
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
-_LOGIN = "5059151"
+_LOGIN = "9999001"
 _ANO = 2026
 
 
@@ -165,25 +165,25 @@ class TestNivelVazio(TestCase):
     def test_detalhes_descarta_nivel_nao_atribuido(self) -> None:
         """Garante `idUes: null` em `DETALHES`."""
         escopo = self.service._aplicar_nivel_vazio(
-            {"idDres": [], "idUes": ["019274"], "idTurmas": ["1001735"]},
+            {"idDres": [], "idUes": ["019274"], "idTurmas": ["9999101"]},
             int(TipoAbrangencia.UE_TURMAS_DISCIPLINAS),
             algoritmo_alternativo=True,
         )
 
         self.assertIsNone(escopo["idUes"])
-        self.assertEqual(escopo["idTurmas"], ["1001735"])
+        self.assertEqual(escopo["idTurmas"], ["9999101"])
         self.assertIsNone(escopo["idDres"])
 
     def test_compacta_mantem_nivel_atribuido(self) -> None:
         """Garante que o fluxo compacto preserva nivel com codigo."""
         escopo = self.service._aplicar_nivel_vazio(
-            {"idDres": [], "idUes": ["019274"], "idTurmas": ["1001735"]},
+            {"idDres": [], "idUes": ["019274"], "idTurmas": ["9999101"]},
             int(TipoAbrangencia.UE_TURMAS_DISCIPLINAS),
             algoritmo_alternativo=False,
         )
 
         self.assertEqual(escopo["idUes"], ["019274"])
-        self.assertEqual(escopo["idTurmas"], ["1001735"])
+        self.assertEqual(escopo["idTurmas"], ["9999101"])
 
     def test_perfil_inexistente_devolve_none(self) -> None:
         """Perfil inexistente nao zera nivel algum."""

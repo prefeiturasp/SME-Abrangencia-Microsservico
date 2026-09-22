@@ -69,14 +69,14 @@ class TestRepresentacaoDosModelos(TestCase):
     def test_abrangencia_resolvida(self) -> None:
         """Escopo exibe login, perfil e resolução."""
         escopo = AbrangenciaResolvida(
-            login="5059151",
+            login="9999001",
             perfil_guid=_PERFIL_GUID,
             tipo_resolucao="COMPACTA",
             tipo_escopo="UE",
         )
 
         self.assertEqual(
-            str(escopo), f"5059151 - {_PERFIL_GUID} - COMPACTA/UE"
+            str(escopo), f"9999001 - {_PERFIL_GUID} - COMPACTA/UE"
         )
 
     def test_unidade(self) -> None:
@@ -88,9 +88,9 @@ class TestRepresentacaoDosModelos(TestCase):
     def test_usuario_por_perfil(self) -> None:
         """Usuário por perfil exibe usuário, perfil e UE."""
         usuario = UsuarioPorPerfil(
-            usuario_rf="5059151",
+            usuario_rf="9999001",
             perfil_guid=_PERFIL_GUID,
             ue_codigo="019331",
         )
 
-        self.assertEqual(str(usuario), f"5059151 - {_PERFIL_GUID} - 019331")
+        self.assertEqual(str(usuario), f"9999001 - {_PERFIL_GUID} - 019331")

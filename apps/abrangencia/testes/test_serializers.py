@@ -37,7 +37,7 @@ class TestAbrangenciaCompactaSerializer(SimpleTestCase):
     def test_campos_de_escopo_aceitam_null(self) -> None:
         """`idDres`/`idUes`/`idTurmas` podem ser `null`."""
         dados = {
-            "login": "5059151",
+            "login": "9999001",
             "abrangencia": None,
             "idDres": None,
             "dres": None,
@@ -56,7 +56,7 @@ class TestAbrangenciaCompactaSerializer(SimpleTestCase):
     def test_coleções_expandidas_aceitam_itens(self) -> None:
         """`dres`/`ues`/`turmas` aceitam listas de objetos expandidos."""
         dados = {
-            "login": "5059151",
+            "login": "9999001",
             "abrangencia": None,
             "idDres": ["108100"],
             "dres": [
@@ -110,7 +110,7 @@ class TestUsuarioPerfilsAbrangenciaSerializer(SimpleTestCase):
     def test_serializa_com_a_chave_perfils(self) -> None:
         """A chave é `perfils`, sem o `i` — erro de digitação preservado."""
         dados = {
-            "usuarioRf": "5059151",
+            "usuarioRf": "9999001",
             "perfils": [{"perfil": _UUID_PERFIL, "ues": ["019331"]}],
         }
 
