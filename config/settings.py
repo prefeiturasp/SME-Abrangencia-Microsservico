@@ -83,10 +83,6 @@ DATABASES = {
     "default": _url_para_bd(os.getenv("AIRFLOW_CONN_ABRANGENCIA_POSTGRES")),
 }
 
-# Usa SQLite em memória durante a execução da suíte de testes, mesmo que
-# a variável de ambiente do banco real esteja definida no shell.
-# `PYTEST_CURRENT_TEST` é definida pelo pytest em qualquer forma de
-# invocação; `sys.argv` cobre `manage.py test`, que não passa por pytest.
 _RODANDO_TESTES = (
     "test" in sys.argv
     or "pytest" in sys.argv[0]
@@ -122,9 +118,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# O ano letivo não vem na rota de nenhum endpoint do domínio Abrangência
-# (herdado do legado): é resolvido a partir do ambiente, com fallback
-# para o ano corrente.
 ABRANGENCIA_ANO_LETIVO = int(
     os.getenv("ABRANGENCIA_ANO_LETIVO") or datetime.now().year
 )
@@ -160,9 +153,6 @@ SPECTACULAR_SETTINGS = {
 
 TEST_RUNNER = "config.test_runner.AbrangenciaTestRunner"
 
-# ---------------------------------------------------------------------------
-# Logging (python-json-logger — padrão Ateliê)
-# ---------------------------------------------------------------------------
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
