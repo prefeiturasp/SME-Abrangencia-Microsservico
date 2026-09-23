@@ -8,13 +8,7 @@ from django.test.runner import DiscoverRunner
 
 
 class AbrangenciaTestRunner(DiscoverRunner):
-    """Cria tabelas não gerenciadas antes de executar os testes.
-
-    Os models do domínio Abrangência são `managed=False` — o schema
-    pertence ao pipeline `sme-airflow`, versionado por Flyway. No SQLite
-    de teste não existe esse schema, então o runner cria as tabelas a
-    partir dos próprios models antes de cada execução da suíte.
-    """
+    """Cria tabelas não gerenciadas antes de executar os testes."""
 
     def setup_databases(self, **kwargs: Any) -> Any:
         """Cria as tabelas dos models não gerenciados e prepara o banco."""

@@ -108,7 +108,7 @@ class TestUsuarioPerfilsAbrangenciaSerializer(SimpleTestCase):
     """Garante a preservação da grafia `perfils` exigida pelo contrato."""
 
     def test_serializa_com_a_chave_perfils(self) -> None:
-        """A chave é `perfils`, sem o `i` — erro de digitação preservado."""
+        """A chave é `perfils`, sem o `i` erro de digitação preservado."""
         dados = {
             "usuarioRf": "9999001",
             "perfils": [{"perfil": _UUID_PERFIL, "ues": ["019331"]}],

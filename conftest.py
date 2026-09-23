@@ -1,10 +1,4 @@
-"""Configuração da suíte pytest.
-
-Os models do domínio Abrangência são `managed=False` — o schema pertence
-ao pipeline `sme-airflow`, versionado por Flyway. O banco de teste do
-pytest-django não tem esse schema por padrão, então esta fixture cria as
-tabelas a partir dos próprios models antes da suíte rodar.
-"""
+"""Configuração da suíte pytest."""
 
 import pytest
 from django.apps import apps
