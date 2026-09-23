@@ -42,23 +42,23 @@ class TestFidelidadeDasRotas(TestCase):
     def test_rotas_reproduzem_os_caminhos_do_legado(self) -> None:
         """Garante que cada endpoint responde no caminho do legado."""
         esperado = {
-            "perfil": (f"{_BASE}/{_PERFIL_GUID}", 32),
+            "perfil": (f"{_BASE}/{_PERFIL_GUID}/", 32),
             "compacta-vigente": (
-                f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}",
+                f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/",
                 162,
             ),
             "compacta-vigente-dre-detalhes": (
                 f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-                "/DreDetalhes",
+                "/DreDetalhes/",
                 174,
             ),
             "compacta-vigente-sondagem": (
                 f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-                "/Sondagem",
+                "/Sondagem/",
                 186,
             ),
             "compacta-sem-redis": (
-                f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}",
+                f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/",
                 198,
             ),
             "perfis-usuarios": (f"{_BASE}/perfis/usuarios", 255),
@@ -108,21 +108,21 @@ class TestPerfilView(TestCase):
         """Requisicao sem API Key e recusada."""
         client_sem_chave = APIClient()
 
-        resposta = client_sem_chave.get(f"{_BASE}/{_PERFIL_GUID}")
+        resposta = client_sem_chave.get(f"{_BASE}/{_PERFIL_GUID}/")
 
         self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_guid_vazio_retorna_400(self) -> None:
         """GUID vazio/malformado e recusado antes de qualquer consulta."""
         resposta = self.client.get(
-            f"{_BASE}/00000000-0000-0000-0000-000000000000"
+            f"{_BASE}/00000000-0000-0000-0000-000000000000/"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_perfil_inexistente_retorna_204(self) -> None:
         """Perfil sem registro nao e erro: responde sem corpo."""
-        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
+        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}/")
 
         self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -135,7 +135,7 @@ class TestPerfilView(TestCase):
             eh_perfil_manual=False,
         )
 
-        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
+        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}/")
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta.json()["grupoID"], _PERFIL_GUID)
@@ -161,7 +161,7 @@ class TestCompactaVigenteView(TestCase):
     def test_guid_invalido_retorna_400(self) -> None:
         """GUID malformado e recusado antes de consultar o escopo."""
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/nao-e-guid"
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/nao-e-guid/"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
@@ -169,7 +169,7 @@ class TestCompactaVigenteView(TestCase):
     def test_usuario_sem_escopo_retorna_200(self) -> None:
         """Usuario sem linha na MV nao e erro: responde 200."""
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/999999/perfil/{_PERFIL_GUID}"
+            f"{_BASE}/compacta-vigente/999999/perfil/{_PERFIL_GUID}/"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -180,7 +180,7 @@ class TestCompactaVigenteView(TestCase):
         criar_escopo(tipo_escopo="UE", ue_codigo="019331")
 
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/"
         )
 
         corpo = resposta.json()
@@ -219,8 +219,8 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
         """Garante que as rotas detalhadas leem `DETALHES`."""
         rotas = (
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/DreDetalhes",
-            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}",
+            "/DreDetalhes/",
+            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/",
         )
 
         for rota in rotas:
@@ -247,10 +247,10 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
 
         e08 = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/DreDetalhes"
+            "/DreDetalhes/"
         ).json()
         e10 = self.client.get(
-            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}"
+            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/"
         ).json()
 
         self.assertEqual(e08["idDres"], ["108100"])
@@ -291,7 +291,7 @@ class TestCompactaSondagemView(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem"
+            "/Sondagem/"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -314,7 +314,7 @@ class TestCompactaSondagemView(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem"
+            "/Sondagem/"
         )
 
         corpo = resposta.json()
@@ -359,7 +359,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem"
+            "/Sondagem/"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -377,7 +377,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem"
+            "/Sondagem/"
         )
 
         corpo = resposta.json()

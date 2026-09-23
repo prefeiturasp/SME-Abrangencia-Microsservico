@@ -44,10 +44,10 @@ As rotas do domínio não usam barra final, mantendo compatibilidade com o contr
 
 | Método | Endpoint | Descrição |
 |---------|----------|-----------|
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}` | Escopo vigente, algoritmo padrão (E-07). |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes` | Escopo vigente, algoritmo alternativo, com DREs expandidas quando aplicável (E-08). |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem` | Escopo alternativo com DREs, UEs e turmas expandidas quando aplicável (E-09). |
-| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}` | Escopo pelo algoritmo alternativo, sem expandir DREs, UEs ou turmas (E-10). |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/` | Escopo vigente, algoritmo padrão. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes/` | Escopo vigente, algoritmo alternativo, com DREs expandidas quando aplicável. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem/` | Escopo alternativo com DREs, UEs e turmas expandidas quando aplicável. |
+| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}/` | Escopo pelo algoritmo alternativo, sem expandir DREs, UEs ou turmas. |
 
 ### Usuários por perfil
 

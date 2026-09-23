@@ -18,24 +18,24 @@ urlpatterns = [
         name="perfis-usuarios",
     ),
     path(
-        "compacta-vigente/<str:login>/perfil/<str:id_perfil>/DreDetalhes",
+        "compacta-vigente/<str:login>/perfil/<str:id_perfil>/DreDetalhes/",
         CompactaDreDetalhesView.as_view(),
         name="compacta-vigente-dre-detalhes",
     ),
     path(
-        "compacta-vigente/<str:login>/perfil/<str:id_perfil>/Sondagem",
+        "compacta-vigente/<str:login>/perfil/<str:id_perfil>/Sondagem/",
         CompactaSondagemView.as_view(),
         name="compacta-vigente-sondagem",
     ),
     path(
-        "compacta-vigente/<str:login>/perfil/<str:id_perfil>",
+        "compacta-vigente/<str:login>/perfil/<str:id_perfil>/",
         CompactaVigenteView.as_view(),
         name="compacta-vigente",
     ),
     path(
-        "compacta-semRedis/<str:login>/perfil/<str:id_perfil>",
+        "compacta-semRedis/<str:login>/perfil/<str:id_perfil>/",
         CompactaSemRedisView.as_view(),
         name="compacta-sem-redis",
     ),
-    path("<str:id_perfil>", PerfilView.as_view(), name="perfil"),
+    path("<str:id_perfil>/", PerfilView.as_view(), name="perfil"),
 ]
