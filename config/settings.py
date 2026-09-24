@@ -130,6 +130,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+        "apps.core.api.parsers.ParserTextJson",
+        "apps.core.api.parsers.ParserJsonPatch",
+    ],
 }
 
 SPECTACULAR_SETTINGS = {

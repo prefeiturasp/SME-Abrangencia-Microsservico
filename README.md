@@ -127,5 +127,5 @@ curl -H "X-API-Key: dev-key-default" \
 | `SME_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | URL OTLP gRPC configurada diretamente no `.env` |
 | `SME_OTEL_EXPORTER_OTLP_HEADERS`  | —                       | Headers do exporter em `chave=valor`            |
 | `SME_OTEL_EXPORTER_OTLP_INSECURE` | `true`                  | Desabilita TLS no transporte OTLP               |
-| `SME_RABBITMQ_URL`                | —                       | URL AMQP para transporte opcional de logs       |
-| `SME_LOG_RABBITMQ_QUEUE`          | —                       | Fila RabbitMQ de logs                           |
+| `SME_BROKER_URL`                  | —                       | URL AMQP para transporte opcional de logs       |
+| `SME_LOG_QUEUE`                   | —                       | Fila de logs                           |

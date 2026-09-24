@@ -18,8 +18,7 @@ COPY pyproject.toml README.md /app/
 COPY requirements /app/requirements
 
 RUN pip install --upgrade pip \
-    && pip install --prefix=/install -r /app/requirements/base.txt \
-    && pip install --prefix=/install gunicorn
+    && pip install --prefix=/install -r /app/requirements/base.txt
 
 
 FROM --platform=linux/amd64 python:3.12-slim
@@ -42,12 +41,10 @@ COPY scripts /app/scripts
 COPY manage.py /app/
 
 RUN python manage.py collectstatic --noinput 2>/dev/null || true \
-    && chmod +x /app/scripts/entrypoint.sh \
     && chown -R app:app /app
 
 USER app
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]

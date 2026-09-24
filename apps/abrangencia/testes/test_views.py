@@ -1,5 +1,7 @@
 """Testes das views do dominio Abrangencia."""
 
+import json
+
 from django.test import TestCase, override_settings
 from django.urls import Resolver404, resolve
 from rest_framework import status
@@ -475,4 +477,56 @@ class TestPerfisUsuariosView(TestCase):
                     ],
                 }
             ],
+        )
+
+    def test_content_types_do_legado_produzem_a_mesma_resposta(
+        self,
+    ) -> None:
+        """Garante o mesmo 200 para os três content-types do legado."""
+        UsuarioPorPerfil.objects.create(
+            usuario_rf=_LOGIN,
+            perfil_guid=_PERFIL_GUID,
+            ano_letivo=_ANO,
+            ue_codigo="019331",
+            dre_codigo="108100",
+        )
+        corpo = json.dumps({"ue": "019331", "perfis": [_PERFIL_GUID]})
+
+        respostas = {}
+        for content_type in [
+            "application/json",
+            "text/json",
+            "application/json-patch+json",
+        ]:
+            with self.subTest(content_type=content_type):
+                resposta = self.client.post(
+                    f"{_BASE}/perfis/usuarios",
+                    data=corpo,
+                    content_type=content_type,
+                )
+                self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+                respostas[content_type] = resposta.json()
+
+        self.assertEqual(len(respostas), 3)
+        self.assertEqual(
+            respostas["text/json"], respostas["application/json"]
+        )
+        self.assertEqual(
+            respostas["application/json-patch+json"],
+            respostas["application/json"],
+        )
+        self.assertEqual(
+            respostas["application/json"][0]["usuarioRf"], _LOGIN
+        )
+
+    def test_content_type_text_plain_responde_415(self) -> None:
+        """Garante que content-type fora de JSON continua recusado."""
+        resposta = self.client.post(
+            f"{_BASE}/perfis/usuarios",
+            data=json.dumps({"ue": "019331", "perfis": [_PERFIL_GUID]}),
+            content_type="text/plain",
+        )
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
         )

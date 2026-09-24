@@ -26,6 +26,21 @@ Caso a chave seja inválida ou esteja ausente, a requisição será rejeitada co
 
 As rotas do domínio não usam barra final, mantendo compatibilidade com o contrato legado.
 
+## `Content-Type`
+
+São aceitos os mesmos content-types JSON da API legada:
+
+| `Content-Type` | Resultado |
+|----------------|-----------|
+| `application/json` | aceito |
+| `text/json` | aceito, lido como JSON |
+| `application/json-patch+json` | aceito, lido como JSON comum |
+| qualquer outro | **415** |
+
+`application/json-patch+json` é aceito apenas como cabeçalho: o corpo é o mesmo JSON dos demais, e nenhuma operação de JSON Patch é aplicada.
+
+**Divergência deliberada:** o Swagger do legado também lista o coringa `application/*+json`, que aqui **não** é reproduzido — `application/vnd.qualquer+json` responde 415. O coringa vem da configuração padrão do framework no legado, e não há consumidor conhecido que envie sufixo próprio.
+
 ## Recursos disponíveis
 
 ### Health Check
