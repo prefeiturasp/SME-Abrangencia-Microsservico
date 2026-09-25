@@ -1,18 +1,26 @@
 """Testes das views do dominio Abrangencia."""
 
 import json
+from typing import Any, cast
+from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+import httpx
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import Resolver404, resolve
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.abrangencia.api.views import (
+    CicloEnsinoView,
+    CodigosDresView,
     CompactaDreDetalhesView,
     CompactaSemRedisView,
     CompactaSondagemView,
     CompactaVigenteView,
+    DresNomeAbreviacaoView,
+    PerfilView,
 )
+from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
 from apps.abrangencia.models import Perfil, UsuarioPorPerfil
 from apps.abrangencia.testes.helpers import (
     criar_escopo,
@@ -64,11 +72,32 @@ class TestFidelidadeDasRotas(TestCase):
                 198,
             ),
             "perfis-usuarios": (f"{_BASE}/perfis/usuarios", 255),
+            "codigos-dres": (f"{_BASE}/codigos-dres/", 54),
+            "nome-abreviacao-dres": (f"{_BASE}/nome-abreviacao-dres/", 74),
+            "ciclo-ensino": (f"{_BASE}/ciclo-ensino/", 242),
         }
 
         for nome, (caminho, linha_legado) in esperado.items():
             with self.subTest(rota=nome, legado=linha_legado):
                 self.assertEqual(resolve(caminho).url_name, nome)
+
+    def test_rotas_de_um_segmento_nao_caem_na_rota_do_perfil(self) -> None:
+        """Garante que a rota do perfil nao engole as rotas de um segmento.
+
+        Registradas depois de `<str:id_perfil>/`, elas responderiam 400
+        "O perfil é obrigatório.".
+        """
+        esperado = {
+            f"{_BASE}/codigos-dres/": CodigosDresView,
+            f"{_BASE}/nome-abreviacao-dres/": DresNomeAbreviacaoView,
+            f"{_BASE}/ciclo-ensino/": CicloEnsinoView,
+            f"{_BASE}/{_PERFIL_GUID}/": PerfilView,
+        }
+
+        for caminho, view in esperado.items():
+            with self.subTest(caminho=caminho):
+                funcao = cast(Any, resolve(caminho).func)
+                self.assertIs(funcao.view_class, view)
 
     def test_rota_com_barra_final_nao_resolve(self) -> None:
         """Garante que a barra final nao e aceita, como no legado."""
@@ -530,3 +559,204 @@ class TestPerfisUsuariosView(TestCase):
         self.assertEqual(
             resposta.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
         )
+
+
+_CORPO_CODIGOS_DRES = b'["000100", "000200"]'
+_CORPO_DRES = (
+    b'[{"codigo": "000100", "nome": "DIRETORIA TESTE",'
+    b' "abreviacao": "DRE - TT"}]'
+)
+
+
+def _catalogo_grande() -> bytes:
+    ciclos = [
+        {
+            "codigoModalidadeEnsino": 1,
+            "codigoEtapaEnsino": 2,
+            "codigo": codigo,
+            "descricao": "CICLO TESTE",
+            "dtAtualizacao": "2011-01-21T19:10:37.937",
+        }
+        for codigo in range(500)
+    ]
+    return json.dumps(ciclos).encode()
+
+
+_CORPO_CICLOS = (
+    b'[{"codigoModalidadeEnsino": 1, "codigoEtapaEnsino": 2, "codigo": 3,'
+    b' "descricao": "CICLO TESTE",'
+    b' "dtAtualizacao": "2011-01-21T19:10:37.937"}]'
+)
+_INDISPONIVEL_INSTITUCIONAL = {
+    "detail": "Serviço de institucional indisponível."
+}
+
+
+def _externa(status_code: int = 200, conteudo: bytes = b"") -> httpx.Response:
+    return httpx.Response(status_code, content=conteudo)
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+class TestDresDaRedeViews(SimpleTestCase):
+    """Testes de `CodigosDresView` e `DresNomeAbreviacaoView`."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado por API Key."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    @patch.object(InstitucionalAPI, "codigos_dres")
+    def test_codigos_dres_repassa_o_corpo_do_institucional(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante E-02 com os mesmos bytes do MS-Institucional."""
+        externa.return_value = _externa(200, _CORPO_CODIGOS_DRES)
+
+        resposta = self.client.get(f"{_BASE}/codigos-dres/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.content, _CORPO_CODIGOS_DRES)
+        self.assertEqual(resposta["Content-Type"], "application/json")
+
+    @patch.object(InstitucionalAPI, "dres_nome_abreviacao")
+    def test_nome_abreviacao_repassa_o_corpo_do_institucional(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante E-03 com os mesmos bytes do MS-Institucional."""
+        externa.return_value = _externa(200, _CORPO_DRES)
+
+        resposta = self.client.get(f"{_BASE}/nome-abreviacao-dres/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.content, _CORPO_DRES)
+
+    @patch.object(InstitucionalAPI, "dres_nome_abreviacao")
+    @patch.object(InstitucionalAPI, "codigos_dres")
+    def test_sem_dre_responde_204_sem_corpo(
+        self, codigos: MagicMock, nomes: MagicMock
+    ) -> None:
+        """Garante 204, e nao 200 com lista vazia, nas duas rotas.
+
+        O legado so responde 200 quando a lista tem ao menos uma DRE.
+        """
+        rotas = {"codigos-dres/": codigos, "nome-abreviacao-dres/": nomes}
+        for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
+            for rota, externa in rotas.items():
+                externa.return_value = _externa(status_externo, conteudo)
+                with self.subTest(rota=rota, conteudo=conteudo):
+                    resposta = self.client.get(f"{_BASE}/{rota}")
+
+                    self.assertEqual(
+                        resposta.status_code, status.HTTP_204_NO_CONTENT
+                    )
+                    self.assertEqual(resposta.content, b"")
+
+    @patch.object(InstitucionalAPI, "codigos_dres")
+    def test_institucional_fora_do_ar_responde_503(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante 503 com o nome da API, e nunca 204, sem o upstream."""
+        externa.side_effect = httpx.ConnectError("recusada")
+
+        resposta = self.client.get(f"{_BASE}/codigos-dres/")
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        self.assertEqual(resposta.json(), _INDISPONIVEL_INSTITUCIONAL)
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+@patch.object(PedagogicoAPI, "ciclos_ensino")
+class TestCicloEnsinoView(SimpleTestCase):
+    """Testes de `CicloEnsinoView`."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado por API Key."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    def test_repassa_o_corpo_sem_transformacao(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante os mesmos bytes, com `dtAtualizacao` sem fuso."""
+        externa.return_value = _externa(200, _CORPO_CICLOS)
+
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.content, _CORPO_CICLOS)
+        self.assertEqual(resposta["Content-Type"], "application/json")
+
+    def test_sem_accept_encoding_nao_comprime(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante o corpo cru para consumidor que nao pede gzip."""
+        externa.return_value = _externa(200, _catalogo_grande())
+
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+
+        self.assertFalse(resposta.has_header("Content-Encoding"))
+        self.assertEqual(resposta.content, _catalogo_grande())
+
+    def test_catalogo_vazio_responde_200_e_nunca_204(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante 200 com `[]` para catalogo vazio ou sem conteudo.
+
+        No legado a guarda do 204 e sempre verdadeira, e a rota nunca
+        responde 204.
+        """
+        for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
+            externa.return_value = _externa(status_externo, conteudo)
+            with self.subTest(status=status_externo, conteudo=conteudo):
+                resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+
+                self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+                self.assertEqual(resposta.json(), [])
+
+    def test_api_fora_do_ar_responde_503(self, externa: MagicMock) -> None:
+        """Garante 503 com o nome da API no `detail`."""
+        externa.side_effect = httpx.ReadTimeout("expirou")
+
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        self.assertEqual(
+            resposta.json(), {"detail": "Serviço de pedagogico indisponível."}
+        )
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+class TestRotasNovasExigemApiKey(SimpleTestCase):
+    """Garante 401 sem API Key nas tres rotas novas."""
+
+    @patch("apps.abrangencia.api.views.PedagogicoAPI")
+    @patch("apps.abrangencia.api.views.InstitucionalAPI")
+    @patch("apps.abrangencia.api.views.AbrangenciaService")
+    def test_sem_api_key_responde_401_sem_consultar_nada(
+        self,
+        service: MagicMock,
+        institucional: MagicMock,
+        pedagogico: MagicMock,
+    ) -> None:
+        """Garante que nenhuma fonte e consultada sem autenticacao."""
+        client = APIClient()
+        chamadas = [
+            ("get", "codigos-dres/"),
+            ("get", "nome-abreviacao-dres/"),
+            ("get", "ciclo-ensino/"),
+        ]
+
+        for metodo, rota in chamadas:
+            with self.subTest(rota=rota):
+                resposta = getattr(client, metodo)(f"{_BASE}/{rota}")
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_401_UNAUTHORIZED
+                )
+        service.assert_not_called()
+        institucional.assert_not_called()
+        pedagogico.assert_not_called()

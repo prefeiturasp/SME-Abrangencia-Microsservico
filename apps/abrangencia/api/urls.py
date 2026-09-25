@@ -3,15 +3,25 @@
 from django.urls import path
 
 from apps.abrangencia.api.views import (
+    CicloEnsinoView,
+    CodigosDresView,
     CompactaDreDetalhesView,
     CompactaSemRedisView,
     CompactaSondagemView,
     CompactaVigenteView,
+    DresNomeAbreviacaoView,
     PerfilView,
     PerfisUsuariosView,
 )
 
 urlpatterns = [
+    path("codigos-dres/", CodigosDresView.as_view(), name="codigos-dres"),
+    path(
+        "nome-abreviacao-dres/",
+        DresNomeAbreviacaoView.as_view(),
+        name="nome-abreviacao-dres",
+    ),
+    path("ciclo-ensino/", CicloEnsinoView.as_view(), name="ciclo-ensino"),
     path(
         "perfis/usuarios",
         PerfisUsuariosView.as_view(),
