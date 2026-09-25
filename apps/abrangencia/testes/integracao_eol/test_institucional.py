@@ -2,10 +2,12 @@
 
 from unittest.mock import MagicMock
 
+from django.test import SimpleTestCase
+
 from apps.abrangencia.integracao_eol import InstitucionalAPI
 
 
-class TestInstitucionalAPI:
+class TestInstitucionalAPI(SimpleTestCase):
     """Trava método e path de cada chamada."""
 
     def test_codigos_dres(self) -> None:
@@ -15,7 +17,7 @@ class TestInstitucionalAPI:
         resposta = InstitucionalAPI(cliente).codigos_dres()
 
         cliente.get.assert_called_once_with("/abrangencia/codigos-dres/")
-        assert resposta is cliente.get.return_value
+        self.assertIs(resposta, cliente.get.return_value)
 
     def test_dres_nome_abreviacao(self) -> None:
         """Garante o GET na lista de DREs com nome e abreviação."""
@@ -26,7 +28,7 @@ class TestInstitucionalAPI:
         cliente.get.assert_called_once_with(
             "/abrangencia/nome-abreviacao-dres/"
         )
-        assert resposta is cliente.get.return_value
+        self.assertIs(resposta, cliente.get.return_value)
 
     def test_sem_cliente_usa_o_configurado_em_apis_externas(self) -> None:
         """Garante que o nome da classe existe em `APIS_EXTERNAS`.
@@ -35,4 +37,4 @@ class TestInstitucionalAPI:
         """
         cliente = InstitucionalAPI()._cliente
 
-        assert cliente.dominio == "institucional"
+        self.assertEqual(cliente.dominio, "institucional")
