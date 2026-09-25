@@ -24,7 +24,7 @@ Caso a chave seja inválida ou esteja ausente, a requisição será rejeitada co
 | Swagger UI | `/abrangencia/api/v1/docs/` |
 | Schema OpenAPI | `/abrangencia/api/v1/docs/schema/` |
 
-As rotas do domínio não usam barra final, mantendo compatibilidade com o contrato legado.
+As rotas `GET` são registradas com barra final; o `POST` `perfis/usuarios` não, como no legado, porque o redirecionamento para a barra final não vale para `POST`.
 
 ## `Content-Type`
 
@@ -69,6 +69,20 @@ São aceitos os mesmos content-types JSON da API legada:
 | Método | Endpoint | Descrição |
 |---------|----------|-----------|
 | POST | `/api/abrangencia/perfis/usuarios` | Lista os usuários lotados em uma UE, para os perfis informados (E-13). |
+
+### DREs e ciclo de ensino
+
+Vêm de APIs da IntegracaoEOL; nenhuma dessas rotas lê o banco de abrangência.
+
+| Método | Endpoint | Descrição | API de origem |
+|---------|----------|-----------|---------------|
+| GET | `/api/abrangencia/codigos-dres/` | Lista de códigos das DREs (E-02). | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/nome-abreviacao-dres/` | DREs com `codigo`, `nome` e `abreviacao` (E-03). | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/ciclo-ensino/` | Catálogo de ciclos de ensino (E-12). | SME-IntegracaoEOL-Pedagogico-Microsservico |
+
+As três rotas devolvem o retorno como a API de origem o entrega.
+
+Variáveis de cada API: `INSTITUCIONAL_API_URL`, `INSTITUCIONAL_API_KEY`, `PEDAGOGICO_API_URL` e `PEDAGOGICO_API_KEY`. A URL inclui o prefixo da API (`https://<host>/api/v1/institucional`, `https://<host>/api/v1/pedagogico`). A chave vai sempre no header `X-API-Key`. URL vazia não impede o serviço de subir: a rota responde 503.
 
 ## Contratos principais
 

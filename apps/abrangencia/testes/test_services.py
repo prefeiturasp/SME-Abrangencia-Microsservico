@@ -186,16 +186,18 @@ class TestNivelVazio(TestCase):
         self.assertEqual(escopo["idTurmas"], ["9999101"])
 
     def test_perfil_inexistente_devolve_none(self) -> None:
-        """Perfil inexistente nao zera nivel algum."""
-        escopo = self.service._aplicar_nivel_vazio(
-            {"idDres": [], "idUes": [], "idTurmas": []},
-            None,
-            algoritmo_alternativo=False,
-        )
+        """Perfil inexistente nao zera nivel algum, nos dois algoritmos."""
+        for algoritmo_alternativo in (False, True):
+            with self.subTest(algoritmo_alternativo=algoritmo_alternativo):
+                escopo = self.service._aplicar_nivel_vazio(
+                    {"idDres": [], "idUes": [], "idTurmas": []},
+                    None,
+                    algoritmo_alternativo=algoritmo_alternativo,
+                )
 
-        self.assertIsNone(escopo["idDres"])
-        self.assertIsNone(escopo["idUes"])
-        self.assertIsNone(escopo["idTurmas"])
+                self.assertIsNone(escopo["idDres"])
+                self.assertIsNone(escopo["idUes"])
+                self.assertIsNone(escopo["idTurmas"])
 
 
 @override_settings(ABRANGENCIA_ANO_LETIVO=_ANO)

@@ -110,6 +110,22 @@ curl -H "X-API-Key: dev-key-default" \
 | GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem/` | Retorna o escopo detalhado com listas expandidas e turmas elegiveis para sondagem. |
 | GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}/` | Retorna o escopo detalhado sem expandir DREs, UEs ou turmas. |
 | POST | `/api/abrangencia/perfis/usuarios` | Lista usuarios por UE, com seus perfis e UEs vinculadas. |
+| GET | `/api/abrangencia/codigos-dres/` | SME-IntegracaoEOL-Institucional-Microsservico os codigos das DREs da rede. |
+| GET | `/api/abrangencia/nome-abreviacao-dres/` | SME-IntegracaoEOL-Institucional-Microsservico as DREs da rede com nome e abreviacao. |
+| GET | `/api/abrangencia/ciclo-ensino/` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico o catalogo de ciclos de ensino. |
+
+---
+
+**APIs externas**
+
+| Variável                            | Padrão      | Descrição                                   |
+| ----------------------------------- | ----------- | ------------------------------------------- |
+| `INSTITUCIONAL_API_URL`             | —           | URL base do SME-IntegracaoEOL-Institucional-Microsservico, com o prefixo: `https://<host>/api/v1/institucional` |
+| `INSTITUCIONAL_API_KEY`             | —           | Chave deste servico no SME-IntegracaoEOL-Institucional-Microsservico     |
+| `PEDAGOGICO_API_URL`                | —           | URL base do MS-Pedagogico, com o prefixo: `https://<host>/api/v1/pedagogico` |
+| `PEDAGOGICO_API_KEY`                | —           | Chave deste servico no MS-Pedagogico        |
+
+A chave vai sempre no header `X-API-Key`. Sem URL, o servico sobe normalmente e as rotas que dependem da API respondem 503.
 
 ---
 

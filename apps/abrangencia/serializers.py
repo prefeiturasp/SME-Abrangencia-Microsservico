@@ -102,7 +102,25 @@ class BuscarUsuariosPerfisSerializer(serializers.Serializer):
     )
 
 
+class DreNomeAbreviacaoSerializer(serializers.Serializer):
+    """Representa uma DRE da rede com nome e abreviação."""
+
+    codigo = serializers.CharField()
+    nome = serializers.CharField(allow_null=True)
+    abreviacao = serializers.CharField(allow_null=True)
+
+
+class CicloEnsinoSerializer(serializers.Serializer):
+    """Representa um ciclo de ensino."""
+
+    codigoModalidadeEnsino = serializers.IntegerField()  # noqa: N815
+    codigoEtapaEnsino = serializers.IntegerField()  # noqa: N815
+    codigo = serializers.IntegerField()
+    descricao = serializers.CharField()
+    dtAtualizacao = serializers.CharField()  # noqa: N815
+
+
 class DetalheErroSerializer(serializers.Serializer):
-    """Corpo de erro genérico, usado nas respostas 400 deste domínio."""
+    """Corpo de erro genérico, usado nas respostas 400 e 503 do domínio."""
 
     detail = serializers.CharField()

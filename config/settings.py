@@ -122,6 +122,23 @@ ABRANGENCIA_ANO_LETIVO = int(
     os.getenv("ABRANGENCIA_ANO_LETIVO") or datetime.now().year
 )
 
+
+def _api_externa(prefixo: str) -> dict[str, str]:
+    """Lê URL e chave de uma API externa pelo prefixo das variáveis.
+
+    URL vazia faz a rota responder 503, e não apontar para outro serviço.
+    """
+    return {
+        "URL": os.getenv(f"{prefixo}_API_URL", ""),
+        "API_KEY": os.getenv(f"{prefixo}_API_KEY", ""),
+    }
+
+
+APIS_EXTERNAS = {
+    "institucional": _api_externa("INSTITUCIONAL"),
+    "pedagogico": _api_externa("PEDAGOGICO"),
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [

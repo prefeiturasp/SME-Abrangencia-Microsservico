@@ -2,21 +2,31 @@
 
 from uuid import UUID
 
+from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.abrangencia.constants import GUID_VAZIO
+from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
 from apps.abrangencia.serializers import (
     AbrangenciaCompactaSerializer,
     BuscarUsuariosPerfisSerializer,
+    CicloEnsinoSerializer,
     DetalheErroSerializer,
+    DreNomeAbreviacaoSerializer,
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
 )
 from apps.abrangencia.services import AbrangenciaService
+from apps.core.api.responses import (
+    resposta_detalhe,
+    resposta_externa,
+    sem_conteudo,
+)
+from apps.core.api.views import APIExternaView
 
 _TAG = ["Abrangencia"]
 
@@ -55,10 +65,7 @@ class PerfilView(APIView):
     def get(self, _request: Request, id_perfil: str) -> Response:
         """Retorna os vínculos funcionais e a abrangência do perfil."""
         if _perfil_invalido(id_perfil):
-            return Response(
-                {"detail": "O perfil é obrigatório."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return resposta_detalhe("O perfil é obrigatório.")
         dados = AbrangenciaService().grupo_cargos(id_perfil)
         if dados is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -76,10 +83,7 @@ class _CompactaBaseView(APIView):
     def get(self, _request: Request, login: str, id_perfil: str) -> Response:
         """Retorna as DREs, UEs e turmas a partir do login e perfil."""
         if _perfil_invalido(id_perfil):
-            return Response(
-                {"detail": "O perfil é obrigatório."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return resposta_detalhe("O perfil é obrigatório.")
         dados = AbrangenciaService().abrangencia_compacta(
             login,
             id_perfil,
@@ -188,3 +192,63 @@ class PerfisUsuariosView(APIView):
             [str(perfil) for perfil in serializer.validated_data["perfis"]],
         )
         return Response(dados)
+
+
+_RESPOSTAS_DRES = {204: None, 503: DetalheErroSerializer}
+
+
+class CodigosDresView(APIExternaView):
+    dominio = InstitucionalAPI.nome
+
+    @extend_schema(
+        tags=_TAG,
+        responses={
+            200: serializers.ListSerializer(child=serializers.CharField()),
+            **_RESPOSTAS_DRES,
+        },
+        operation_id="abrangencia_codigos_dres",
+    )
+    def get(self, _request: Request) -> HttpResponse:
+        """Retorna os códigos das DREs."""
+        resposta = InstitucionalAPI().codigos_dres()
+        if sem_conteudo(resposta):
+            return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+        return resposta_externa(resposta)
+
+
+class DresNomeAbreviacaoView(APIExternaView):
+    dominio = InstitucionalAPI.nome
+
+    @extend_schema(
+        tags=_TAG,
+        responses={
+            200: DreNomeAbreviacaoSerializer(many=True),
+            **_RESPOSTAS_DRES,
+        },
+        operation_id="abrangencia_nome_abreviacao_dres",
+    )
+    def get(self, _request: Request) -> HttpResponse:
+        """Retorna nome e abreviação das DREs."""
+        resposta = InstitucionalAPI().dres_nome_abreviacao()
+        if sem_conteudo(resposta):
+            return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+        return resposta_externa(resposta)
+
+
+class CicloEnsinoView(APIExternaView):
+    dominio = PedagogicoAPI.nome
+
+    @extend_schema(
+        tags=_TAG,
+        responses={
+            200: CicloEnsinoSerializer(many=True),
+            503: DetalheErroSerializer,
+        },
+        operation_id="abrangencia_ciclo_ensino",
+    )
+    def get(self, _request: Request) -> HttpResponse:
+        """Retorna os ciclos de ensino."""
+        resposta = PedagogicoAPI().ciclos_ensino()
+        if sem_conteudo(resposta):
+            return HttpResponse(b"[]", content_type="application/json")
+        return resposta_externa(resposta)
