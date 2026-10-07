@@ -11,7 +11,7 @@ class Perfil(ModeloBase):
     perfil_guid = models.UUIDField(primary_key=True)
     grupo_codigo = models.IntegerField(unique=True)
     nome = models.TextField(null=True, blank=True)
-    tipo_abrangencia = models.IntegerField()
+    abrangencia_id = models.IntegerField(null=True, blank=True)
     eh_perfil_manual = models.BooleanField(default=False)
     eh_perfil_misto = models.BooleanField(default=False)
     atualizado_em = models.DateTimeField(null=True, blank=True)

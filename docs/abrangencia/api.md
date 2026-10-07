@@ -59,10 +59,10 @@ São aceitos os mesmos content-types JSON da API legada:
 
 | Método | Endpoint | Descrição |
 |---------|----------|-----------|
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/` | Escopo vigente, algoritmo padrão. |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes/` | Escopo vigente, algoritmo alternativo, com DREs expandidas quando aplicável. |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem/` | Escopo alternativo com DREs, UEs e turmas expandidas quando aplicável. |
-| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}/` | Escopo pelo algoritmo alternativo, sem expandir DREs, UEs ou turmas. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}` | Escopo vigente, algoritmo padrão. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes` | Escopo vigente, algoritmo alternativo, com DREs expandidas quando aplicável. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem` | Escopo alternativo com DREs, UEs e turmas expandidas quando aplicável. |
+| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}` | Escopo pelo algoritmo alternativo, sem expandir DREs, UEs ou turmas. |
 
 ### Usuários por perfil
 
@@ -76,9 +76,9 @@ Vêm de APIs da IntegracaoEOL; nenhuma dessas rotas lê o banco de abrangência.
 
 | Método | Endpoint | Descrição | API de origem |
 |---------|----------|-----------|---------------|
-| GET | `/api/abrangencia/codigos-dres/` | Lista de códigos das DREs (E-02). | SME-IntegracaoEOL-Institucional-Microsservico |
-| GET | `/api/abrangencia/nome-abreviacao-dres/` | DREs com `codigo`, `nome` e `abreviacao` (E-03). | SME-IntegracaoEOL-Institucional-Microsservico |
-| GET | `/api/abrangencia/ciclo-ensino/` | Catálogo de ciclos de ensino (E-12). | SME-IntegracaoEOL-Pedagogico-Microsservico |
+| GET | `/api/abrangencia/codigos-dres` | Lista de códigos das DREs (E-02). | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/nome-abreviacao-dres` | DREs com `codigo`, `nome` e `abreviacao` (E-03). | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/ciclo-ensino` | Catálogo de ciclos de ensino (E-12). | SME-IntegracaoEOL-Pedagogico-Microsservico |
 
 As três rotas devolvem o retorno como a API de origem o entrega.
 

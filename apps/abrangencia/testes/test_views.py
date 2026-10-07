@@ -52,29 +52,29 @@ class TestFidelidadeDasRotas(TestCase):
     def test_rotas_reproduzem_os_caminhos_do_legado(self) -> None:
         """Garante que cada endpoint responde no caminho do legado."""
         esperado = {
-            "perfil": (f"{_BASE}/{_PERFIL_GUID}/", 32),
+            "perfil": (f"{_BASE}/{_PERFIL_GUID}", 32),
             "compacta-vigente": (
-                f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/",
+                f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}",
                 162,
             ),
             "compacta-vigente-dre-detalhes": (
                 f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-                "/DreDetalhes/",
+                "/DreDetalhes",
                 174,
             ),
             "compacta-vigente-sondagem": (
                 f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-                "/Sondagem/",
+                "/Sondagem",
                 186,
             ),
             "compacta-sem-redis": (
-                f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/",
+                f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}",
                 198,
             ),
             "perfis-usuarios": (f"{_BASE}/perfis/usuarios", 255),
-            "codigos-dres": (f"{_BASE}/codigos-dres/", 54),
-            "nome-abreviacao-dres": (f"{_BASE}/nome-abreviacao-dres/", 74),
-            "ciclo-ensino": (f"{_BASE}/ciclo-ensino/", 242),
+            "codigos-dres": (f"{_BASE}/codigos-dres", 54),
+            "nome-abreviacao-dres": (f"{_BASE}/nome-abreviacao-dres", 74),
+            "ciclo-ensino": (f"{_BASE}/ciclo-ensino", 242),
         }
 
         for nome, (caminho, linha_legado) in esperado.items():
@@ -88,10 +88,10 @@ class TestFidelidadeDasRotas(TestCase):
         "O perfil é obrigatório.".
         """
         esperado = {
-            f"{_BASE}/codigos-dres/": CodigosDresView,
-            f"{_BASE}/nome-abreviacao-dres/": DresNomeAbreviacaoView,
-            f"{_BASE}/ciclo-ensino/": CicloEnsinoView,
-            f"{_BASE}/{_PERFIL_GUID}/": PerfilView,
+            f"{_BASE}/codigos-dres": CodigosDresView,
+            f"{_BASE}/nome-abreviacao-dres": DresNomeAbreviacaoView,
+            f"{_BASE}/ciclo-ensino": CicloEnsinoView,
+            f"{_BASE}/{_PERFIL_GUID}": PerfilView,
         }
 
         for caminho, view in esperado.items():
@@ -100,9 +100,30 @@ class TestFidelidadeDasRotas(TestCase):
                 self.assertIs(funcao.view_class, view)
 
     def test_rota_com_barra_final_nao_resolve(self) -> None:
-        """Garante que a barra final nao e aceita, como no legado."""
-        with self.assertRaises(Resolver404):
-            resolve(f"{_BASE}/perfis/usuarios/")
+        """Garante que a barra final nao e aceita, como no legado.
+
+        Nenhuma rota do `AbrangenciaController` termina em barra.
+        """
+        caminhos = [
+            f"{_BASE}/{_PERFIL_GUID}/",
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/",
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
+            "/DreDetalhes/",
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
+            "/Sondagem/",
+            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/",
+            f"{_BASE}/perfis/usuarios/",
+            f"{_BASE}/codigos-dres/",
+            f"{_BASE}/nome-abreviacao-dres/",
+            f"{_BASE}/ciclo-ensino/",
+        ]
+
+        for caminho in caminhos:
+            with (
+                self.subTest(caminho=caminho),
+                self.assertRaises(Resolver404),
+            ):
+                resolve(caminho)
 
 
 class TestFlagsDeExpansaoPorEndpoint(TestCase):
@@ -139,21 +160,21 @@ class TestPerfilView(TestCase):
         """Requisicao sem API Key e recusada."""
         client_sem_chave = APIClient()
 
-        resposta = client_sem_chave.get(f"{_BASE}/{_PERFIL_GUID}/")
+        resposta = client_sem_chave.get(f"{_BASE}/{_PERFIL_GUID}")
 
         self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_guid_vazio_retorna_400(self) -> None:
         """GUID vazio/malformado e recusado antes de qualquer consulta."""
         resposta = self.client.get(
-            f"{_BASE}/00000000-0000-0000-0000-000000000000/"
+            f"{_BASE}/00000000-0000-0000-0000-000000000000"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_perfil_inexistente_retorna_204(self) -> None:
         """Perfil sem registro nao e erro: responde sem corpo."""
-        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}/")
+        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
 
         self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -162,11 +183,11 @@ class TestPerfilView(TestCase):
         Perfil.objects.create(
             perfil_guid=_PERFIL_GUID,
             grupo_codigo=10,
-            tipo_abrangencia=1,
+            abrangencia_id=1,
             eh_perfil_manual=False,
         )
 
-        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}/")
+        resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta.json()["grupoID"], _PERFIL_GUID)
@@ -185,14 +206,14 @@ class TestCompactaVigenteView(TestCase):
         Perfil.objects.create(
             perfil_guid=_PERFIL_GUID,
             grupo_codigo=10,
-            tipo_abrangencia=1,
+            abrangencia_id=1,
             eh_perfil_manual=False,
         )
 
     def test_guid_invalido_retorna_400(self) -> None:
         """GUID malformado e recusado antes de consultar o escopo."""
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/nao-e-guid/"
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/nao-e-guid"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
@@ -200,7 +221,7 @@ class TestCompactaVigenteView(TestCase):
     def test_usuario_sem_escopo_retorna_200(self) -> None:
         """Usuario sem linha na MV nao e erro: responde 200."""
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/999999/perfil/{_PERFIL_GUID}/"
+            f"{_BASE}/compacta-vigente/999999/perfil/{_PERFIL_GUID}"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -211,7 +232,7 @@ class TestCompactaVigenteView(TestCase):
         criar_escopo(tipo_escopo="UE", ue_codigo="019331")
 
         resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/"
+            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
         )
 
         corpo = resposta.json()
@@ -236,7 +257,7 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
         Perfil.objects.create(
             perfil_guid=_PERFIL_GUID,
             grupo_codigo=10,
-            tipo_abrangencia=1,
+            abrangencia_id=1,
             eh_perfil_manual=False,
         )
         criar_escopo(
@@ -250,8 +271,8 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
         """Garante que as rotas detalhadas leem `DETALHES`."""
         rotas = (
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/DreDetalhes/",
-            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/",
+            "/DreDetalhes",
+            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}",
         )
 
         for rota in rotas:
@@ -264,7 +285,7 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
     def test_rota_de_dres_detalhadas_expande_dres(self) -> None:
         """Garante que so a rota de DREs detalhadas devolve `dres[]`."""
         Perfil.objects.filter(perfil_guid=_PERFIL_GUID).update(
-            tipo_abrangencia=6
+            abrangencia_id=6
         )
         criar_escopo(
             tipo_resolucao="DETALHES", tipo_escopo="DRE", dre_codigo="108100"
@@ -278,10 +299,10 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
 
         e08 = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/DreDetalhes/"
+            "/DreDetalhes"
         ).json()
         e10 = self.client.get(
-            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}/"
+            f"{_BASE}/compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}"
         ).json()
 
         self.assertEqual(e08["idDres"], ["108100"])
@@ -303,7 +324,7 @@ class TestCompactaSondagemView(TestCase):
         Perfil.objects.create(
             perfil_guid=_PERFIL_GUID,
             grupo_codigo=6,
-            tipo_abrangencia=2,
+            abrangencia_id=2,
             eh_perfil_manual=False,
         )
 
@@ -322,7 +343,7 @@ class TestCompactaSondagemView(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem/"
+            "/Sondagem"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -345,7 +366,7 @@ class TestCompactaSondagemView(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem/"
+            "/Sondagem"
         )
 
         corpo = resposta.json()
@@ -366,7 +387,7 @@ class TestExpansaoNoTipoUe(TestCase):
         Perfil.objects.create(
             perfil_guid=_PERFIL_GUID,
             grupo_codigo=10,
-            tipo_abrangencia=1,
+            abrangencia_id=1,
             eh_perfil_manual=False,
         )
 
@@ -390,7 +411,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem/"
+            "/Sondagem"
         )
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
@@ -408,7 +429,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
-            "/Sondagem/"
+            "/Sondagem"
         )
 
         corpo = resposta.json()
@@ -612,7 +633,7 @@ class TestDresDaRedeViews(SimpleTestCase):
         """Garante E-02 com os mesmos bytes do MS-Institucional."""
         externa.return_value = _externa(200, _CORPO_CODIGOS_DRES)
 
-        resposta = self.client.get(f"{_BASE}/codigos-dres/")
+        resposta = self.client.get(f"{_BASE}/codigos-dres")
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta.content, _CORPO_CODIGOS_DRES)
@@ -625,7 +646,7 @@ class TestDresDaRedeViews(SimpleTestCase):
         """Garante E-03 com os mesmos bytes do MS-Institucional."""
         externa.return_value = _externa(200, _CORPO_DRES)
 
-        resposta = self.client.get(f"{_BASE}/nome-abreviacao-dres/")
+        resposta = self.client.get(f"{_BASE}/nome-abreviacao-dres")
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta.content, _CORPO_DRES)
@@ -639,7 +660,7 @@ class TestDresDaRedeViews(SimpleTestCase):
 
         O legado so responde 200 quando a lista tem ao menos uma DRE.
         """
-        rotas = {"codigos-dres/": codigos, "nome-abreviacao-dres/": nomes}
+        rotas = {"codigos-dres": codigos, "nome-abreviacao-dres": nomes}
         for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
             for rota, externa in rotas.items():
                 externa.return_value = _externa(status_externo, conteudo)
@@ -658,7 +679,7 @@ class TestDresDaRedeViews(SimpleTestCase):
         """Garante 503 com o nome da API, e nunca 204, sem o upstream."""
         externa.side_effect = httpx.ConnectError("recusada")
 
-        resposta = self.client.get(f"{_BASE}/codigos-dres/")
+        resposta = self.client.get(f"{_BASE}/codigos-dres")
 
         self.assertEqual(
             resposta.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
@@ -682,7 +703,7 @@ class TestCicloEnsinoView(SimpleTestCase):
         """Garante os mesmos bytes, com `dtAtualizacao` sem fuso."""
         externa.return_value = _externa(200, _CORPO_CICLOS)
 
-        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino")
 
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta.content, _CORPO_CICLOS)
@@ -694,7 +715,7 @@ class TestCicloEnsinoView(SimpleTestCase):
         """Garante o corpo cru para consumidor que nao pede gzip."""
         externa.return_value = _externa(200, _catalogo_grande())
 
-        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino")
 
         self.assertFalse(resposta.has_header("Content-Encoding"))
         self.assertEqual(resposta.content, _catalogo_grande())
@@ -710,7 +731,7 @@ class TestCicloEnsinoView(SimpleTestCase):
         for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
             externa.return_value = _externa(status_externo, conteudo)
             with self.subTest(status=status_externo, conteudo=conteudo):
-                resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+                resposta = self.client.get(f"{_BASE}/ciclo-ensino")
 
                 self.assertEqual(resposta.status_code, status.HTTP_200_OK)
                 self.assertEqual(resposta.json(), [])
@@ -719,7 +740,7 @@ class TestCicloEnsinoView(SimpleTestCase):
         """Garante 503 com o nome da API no `detail`."""
         externa.side_effect = httpx.ReadTimeout("expirou")
 
-        resposta = self.client.get(f"{_BASE}/ciclo-ensino/")
+        resposta = self.client.get(f"{_BASE}/ciclo-ensino")
 
         self.assertEqual(
             resposta.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
@@ -745,9 +766,9 @@ class TestRotasNovasExigemApiKey(SimpleTestCase):
         """Garante que nenhuma fonte e consultada sem autenticacao."""
         client = APIClient()
         chamadas = [
-            ("get", "codigos-dres/"),
-            ("get", "nome-abreviacao-dres/"),
-            ("get", "ciclo-ensino/"),
+            ("get", "codigos-dres"),
+            ("get", "nome-abreviacao-dres"),
+            ("get", "ciclo-ensino"),
         ]
 
         for metodo, rota in chamadas:
