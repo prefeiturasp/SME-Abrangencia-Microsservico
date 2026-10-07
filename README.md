@@ -104,15 +104,15 @@ curl -H "X-API-Key: dev-key-default" \
 
 | Metodo | Path | Atende 
 |--------|------|--------|
-| GET | `/api/abrangencia/{id_perfil}/` | Retorna cargos, funcoes e tipo de abrangencia do perfil consultado. |
+| GET | `/api/abrangencia/{id_perfil}` | Retorna cargos, funcoes e tipo de abrangencia do perfil consultado. |
 | GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}` | Retorna o escopo compacto vigente do usuario no perfil, sem listas detalhadas. |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes/` | Retorna o escopo detalhado com DREs expandidas quando o tipo de abrangencia permite. |
-| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem/` | Retorna o escopo detalhado com listas expandidas e turmas elegiveis para sondagem. |
-| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}/` | Retorna o escopo detalhado sem expandir DREs, UEs ou turmas. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/DreDetalhes` | Retorna o escopo detalhado com DREs expandidas quando o tipo de abrangencia permite. |
+| GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem` | Retorna o escopo detalhado com listas expandidas e turmas elegiveis para sondagem. |
+| GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}` | Retorna o escopo detalhado sem expandir DREs, UEs ou turmas. |
 | POST | `/api/abrangencia/perfis/usuarios` | Lista usuarios por UE, com seus perfis e UEs vinculadas. |
-| GET | `/api/abrangencia/codigos-dres/` | SME-IntegracaoEOL-Institucional-Microsservico os codigos das DREs da rede. |
-| GET | `/api/abrangencia/nome-abreviacao-dres/` | SME-IntegracaoEOL-Institucional-Microsservico as DREs da rede com nome e abreviacao. |
-| GET | `/api/abrangencia/ciclo-ensino/` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico o catalogo de ciclos de ensino. |
+| GET | `/api/abrangencia/codigos-dres` | SME-IntegracaoEOL-Institucional-Microsservico os codigos das DREs da rede. |
+| GET | `/api/abrangencia/nome-abreviacao-dres` | SME-IntegracaoEOL-Institucional-Microsservico as DREs da rede com nome e abreviacao. |
+| GET | `/api/abrangencia/ciclo-ensino` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico o catalogo de ciclos de ensino. |
 
 ---
 

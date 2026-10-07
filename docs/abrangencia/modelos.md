@@ -23,7 +23,7 @@ Perfil do CoreSSO, com o ramo de abrangência (`TipoAbrangencia`) que ele resolv
 | `perfil_guid` | UUID | Identificador do perfil (PK). |
 | `grupo_codigo` | Integer | Código do grupo do legado. |
 | `nome` | Text | Nome do perfil. |
-| `tipo_abrangencia` | Integer | Ramo de `TipoAbrangencia` que decide a forma do escopo. |
+| `abrangencia_id` | Integer | Ramo de `TipoAbrangencia` que decide a forma do escopo. |
 | `eh_perfil_manual` | Boolean | Indica perfil de concessão manual. |
 | `eh_perfil_misto` | Boolean | Indica perfil misto. |
 | `atualizado_em` | DateTime | Data/hora da última atualização no pipeline. |

@@ -27,7 +27,7 @@ def criar_perfil(
     Perfil.objects.create(
         perfil_guid=_PERFIL_GUID,
         grupo_codigo=grupo_codigo,
-        tipo_abrangencia=tipo_abrangencia,
+        abrangencia_id=tipo_abrangencia,
         eh_perfil_manual=eh_perfil_manual,
     )
 

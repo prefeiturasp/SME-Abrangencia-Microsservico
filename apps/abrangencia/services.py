@@ -118,7 +118,7 @@ class AbrangenciaService:
             "cargosId": perfil["cargos"],
             "funcoesId": perfil["funcoes"],
             "grupo": perfil["grupo_codigo"],
-            "abrangencia": perfil["tipo_abrangencia"],
+            "abrangencia": perfil["abrangencia_id"],
             "ehPerfilManual": self._manual_do_perfil(
                 perfil, eh_grupo_manual=eh_grupo_manual
             ),
@@ -732,7 +732,7 @@ class AbrangenciaService:
             .values(
                 "perfil_guid",
                 "grupo_codigo",
-                "tipo_abrangencia",
+                "abrangencia_id",
                 "eh_perfil_manual",
                 "eh_grupo_manual",
             )
@@ -788,18 +788,18 @@ class AbrangenciaService:
             perfil_guid: GUID do perfil consultado.
 
         Returns:
-            `tipo_abrangencia`  None quando o perfil nao existe,
+            `abrangencia_id`  None quando o perfil nao existe,
             `eh_perfil_manual`, o flag agregado e `grupo_codigo`.
         """
         perfil = (
             Perfil.objects.filter(perfil_guid=perfil_guid)
-            .values("tipo_abrangencia", "eh_perfil_manual", "grupo_codigo")
+            .values("abrangencia_id", "eh_perfil_manual", "grupo_codigo")
             .first()
         )
         if perfil is None:
             return None, False, None
         return (
-            perfil["tipo_abrangencia"],
+            perfil["abrangencia_id"],
             bool(perfil["eh_perfil_manual"]),
             perfil["grupo_codigo"],
         )
