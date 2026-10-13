@@ -1,5 +1,7 @@
 """Views do domínio Abrangência."""
 
+import re
+from typing import Any
 from uuid import UUID
 
 from django.http import HttpResponse
@@ -17,6 +19,7 @@ from apps.abrangencia.serializers import (
     CicloEnsinoSerializer,
     DetalheErroSerializer,
     DreNomeAbreviacaoSerializer,
+    EstruturaVigenteSerializer,
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
 )
@@ -233,6 +236,85 @@ class DresNomeAbreviacaoView(APIExternaView):
         if sem_conteudo(resposta):
             return HttpResponse(status=status.HTTP_204_NO_CONTENT)
         return resposta_externa(resposta)
+
+
+_MSG_CODIGO_DRE_OBRIGATORIO = "O codigo da Dre é obrigatório"
+_MSG_TURMA_OBRIGATORIA = "É necessário informar ao menos uma turma"
+_CODIGO_NUMERICO = re.compile(r"[0-9]+")
+
+_RESPOSTAS_ESTRUTURA = {
+    200: EstruturaVigenteSerializer,
+    204: None,
+    400: DetalheErroSerializer,
+    503: DetalheErroSerializer,
+}
+
+
+def _numerico(valor: str) -> bool:
+    return _CODIGO_NUMERICO.fullmatch(valor) is not None
+
+
+def _codigos_turma(corpo: Any) -> list[int]:
+    """Extrai os códigos numéricos ignorando os demais itens."""
+    if not isinstance(corpo, list):
+        return []
+    codigos = (str(item).strip() for item in corpo)
+    return [int(codigo) for codigo in codigos if _numerico(codigo)]
+
+
+def _resposta_estrutura(dados: dict[str, Any]) -> Response:
+    if not dados["dres"]:
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    return Response(dados)
+
+
+class EstruturaVigentePorDreView(APIExternaView):
+    """Estrutura vigente de uma DRE."""
+
+    dominio = PedagogicoAPI.nome
+
+    @extend_schema(
+        tags=_TAG,
+        parameters=[
+            OpenApiParameter(
+                "codigo_dre",
+                str,
+                OpenApiParameter.PATH,
+                description="Código EOL da DRE.",
+            )
+        ],
+        responses=_RESPOSTAS_ESTRUTURA,
+        operation_id="abrangencia_estrutura_vigente_por_dre",
+    )
+    def get(self, _request: Request, codigo_dre: str) -> Response:
+        """Retorna a árvore DRE -> UE -> turma vigente da DRE."""
+        codigo_dre = codigo_dre.strip()
+        if not codigo_dre:
+            return resposta_detalhe(_MSG_CODIGO_DRE_OBRIGATORIO)
+        if not _numerico(codigo_dre):
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        dados = PedagogicoAPI().estrutura_vigente_por_dre(codigo_dre)
+        return _resposta_estrutura(dados)
+
+
+class EstruturaVigenteView(APIExternaView):
+    """Estrutura vigente de uma lista de códigos de turmas."""
+
+    dominio = PedagogicoAPI.nome
+
+    @extend_schema(
+        tags=_TAG,
+        request=serializers.ListSerializer(child=serializers.CharField()),
+        responses=_RESPOSTAS_ESTRUTURA,
+        operation_id="abrangencia_estrutura_vigente_por_turmas",
+    )
+    def post(self, request: Request) -> Response:
+        """Retorna a árvore DRE -> UE -> turma vigente das turmas."""
+        codigos = _codigos_turma(request.data)
+        if not codigos:
+            return resposta_detalhe(_MSG_TURMA_OBRIGATORIA)
+        dados = PedagogicoAPI().estrutura_vigente_por_turmas(codigos)
+        return _resposta_estrutura(dados)
 
 
 class CicloEnsinoView(APIExternaView):

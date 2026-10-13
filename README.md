@@ -113,6 +113,8 @@ curl -H "X-API-Key: dev-key-default" \
 | GET | `/api/abrangencia/codigos-dres` | SME-IntegracaoEOL-Institucional-Microsservico os codigos das DREs da rede. |
 | GET | `/api/abrangencia/nome-abreviacao-dres` | SME-IntegracaoEOL-Institucional-Microsservico as DREs da rede com nome e abreviacao. |
 | GET | `/api/abrangencia/ciclo-ensino` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico o catalogo de ciclos de ensino. |
+| GET | `/api/abrangencia/estrutura-vigente/{codigo_dre}` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico a estrutura DRE, UE e turma vigente de uma DRE. |
+| POST | `/api/abrangencia/estrutura-vigente` | Consulta SME-IntegracaoEOL-Pedagogico-Microsservico a estrutura DRE, UE a partir do código das turmas informadas. |
 
 ---
 

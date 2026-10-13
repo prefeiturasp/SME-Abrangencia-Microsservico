@@ -10,6 +10,8 @@ from apps.abrangencia.api.views import (
     CompactaSondagemView,
     CompactaVigenteView,
     DresNomeAbreviacaoView,
+    EstruturaVigentePorDreView,
+    EstruturaVigenteView,
     PerfilView,
     PerfisUsuariosView,
 )
@@ -22,6 +24,16 @@ urlpatterns = [
         name="nome-abreviacao-dres",
     ),
     path("ciclo-ensino", CicloEnsinoView.as_view(), name="ciclo-ensino"),
+    path(
+        "estrutura-vigente",
+        EstruturaVigenteView.as_view(),
+        name="estrutura-vigente",
+    ),
+    path(
+        "estrutura-vigente/<str:codigo_dre>",
+        EstruturaVigentePorDreView.as_view(),
+        name="estrutura-vigente-por-dre",
+    ),
     path(
         "perfis/usuarios",
         PerfisUsuariosView.as_view(),

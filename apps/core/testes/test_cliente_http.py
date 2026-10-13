@@ -41,6 +41,18 @@ class TestClienteServico(SimpleTestCase):
             headers={"Accept": "application/json", "X-API-Key": "segredo"},
         )
 
+    def test_get_repassa_params_ao_cliente_do_sdk(
+        self, build: MagicMock
+    ) -> None:
+        """Garante a query string montada pelo httpx."""
+        _cliente().get("/recurso/", params={"codigo": "108100"})
+
+        build.return_value.get.assert_called_once_with(
+            "/recurso/",
+            headers={"Accept": "application/json"},
+            params={"codigo": "108100"},
+        )
+
     def test_post_envia_payload_como_json(self, build: MagicMock) -> None:
         """Garante que o payload vai como corpo JSON, sem transformação."""
         _cliente(api_key="segredo").post("/recurso/", payload=["1", "abc"])

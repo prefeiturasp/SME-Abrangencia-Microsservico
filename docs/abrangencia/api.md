@@ -24,7 +24,7 @@ Caso a chave seja inválida ou esteja ausente, a requisição será rejeitada co
 | Swagger UI | `/abrangencia/api/v1/docs/` |
 | Schema OpenAPI | `/abrangencia/api/v1/docs/schema/` |
 
-As rotas `GET` são registradas com barra final; o `POST` `perfis/usuarios` não, como no legado, porque o redirecionamento para a barra final não vale para `POST`.
+Nenhuma rota do domínio termina em barra, como no legado; com barra final, a rota responde 404.
 
 ## `Content-Type`
 
@@ -76,9 +76,11 @@ Vêm de APIs da IntegracaoEOL; nenhuma dessas rotas lê o banco de abrangência.
 
 | Método | Endpoint | Descrição | API de origem |
 |---------|----------|-----------|---------------|
-| GET | `/api/abrangencia/codigos-dres` | Lista de códigos das DREs (E-02). | SME-IntegracaoEOL-Institucional-Microsservico |
-| GET | `/api/abrangencia/nome-abreviacao-dres` | DREs com `codigo`, `nome` e `abreviacao` (E-03). | SME-IntegracaoEOL-Institucional-Microsservico |
-| GET | `/api/abrangencia/ciclo-ensino` | Catálogo de ciclos de ensino (E-12). | SME-IntegracaoEOL-Pedagogico-Microsservico |
+| GET | `/api/abrangencia/codigos-dres` | Lista de códigos das DREs. | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/nome-abreviacao-dres` | DREs com `codigo`, `nome` e `abreviacao`. | SME-IntegracaoEOL-Institucional-Microsservico |
+| GET | `/api/abrangencia/ciclo-ensino` | Lista de ciclos de ensino. | SME-IntegracaoEOL-Pedagogico-Microsservico |
+| GET | `/api/abrangencia/estrutura-vigente/{codigo_dre}` | Estrutura vigente da DRE informada. | SME-IntegracaoEOL-Pedagogico-Microsservico |
+| POST | `/api/abrangencia/estrutura-vigente` | Estrutura vigente dos códigos de turmas informadas. | SME-IntegracaoEOL-Pedagogico-Microsservico |
 
 As três rotas devolvem o retorno como a API de origem o entrega.
 
