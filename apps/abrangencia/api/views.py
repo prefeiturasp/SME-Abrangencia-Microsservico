@@ -255,6 +255,7 @@ _RESPOSTAS_ESTRUTURA = {
 
 
 def _numerico(valor: str) -> bool:
+    """Verifica se valor contém apenas números."""
     return _CODIGO_NUMERICO.fullmatch(valor) is not None
 
 
@@ -267,6 +268,7 @@ def _codigos_turma(corpo: Any) -> list[int]:
 
 
 def _resposta_estrutura(dados: dict[str, Any]) -> Response:
+    """Monta a resposta HTTP com os dados ou status 204 se estiver vazio."""
     if not dados["dres"]:
         return Response(status=status.HTTP_204_NO_CONTENT)
     return Response(dados)
