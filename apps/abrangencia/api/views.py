@@ -201,6 +201,8 @@ _RESPOSTAS_DRES = {204: None, 503: DetalheErroSerializer}
 
 
 class CodigosDresView(APIExternaView):
+    """Lista os códigos da DREs."""
+    
     dominio = InstitucionalAPI.nome
 
     @extend_schema(
@@ -220,6 +222,8 @@ class CodigosDresView(APIExternaView):
 
 
 class DresNomeAbreviacaoView(APIExternaView):
+    """Lista código, nome e abreviação das DREs."""
+    
     dominio = InstitucionalAPI.nome
 
     @extend_schema(
@@ -318,6 +322,8 @@ class EstruturaVigenteView(APIExternaView):
 
 
 class CicloEnsinoView(APIExternaView):
+    """Lista os ciclos de ensino."""
+    
     dominio = PedagogicoAPI.nome
 
     @extend_schema(

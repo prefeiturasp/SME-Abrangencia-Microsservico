@@ -39,6 +39,7 @@ class PedagogicoAPI:
         self, codigos_turma: list[int]
     ) -> dict[str, Any]:
         """Busca DRE, UE e das turmas informadas."""
+    
         resposta = self._cliente.post(
             self._PATH_TURMAS_POR_CODIGO, payload=codigos_turma
         )
@@ -46,6 +47,8 @@ class PedagogicoAPI:
 
 
 def _estrutura_legado(resposta: httpx.Response) -> dict[str, Any]:
+    """Retorna estrutura com a lista de DREs."""
+    
     if resposta.status_code == 204 or not resposta.content:
         return {"dres": []}
     corpo = resposta.json()
@@ -54,6 +57,8 @@ def _estrutura_legado(resposta: httpx.Response) -> dict[str, Any]:
 
 
 def _dre_legado(dre: dict[str, Any]) -> dict[str, Any]:
+    """Retorna as UEs de uma DRE."""
+    
     ues = dre.get("ues")
     if not isinstance(ues, list):
         return dre
@@ -61,6 +66,8 @@ def _dre_legado(dre: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ue_legado(ue: dict[str, Any]) -> dict[str, Any]:
+    """Retorna as turmas de uma UE."""
+    
     turmas = ue.get("turmas")
     if not isinstance(turmas, list):
         return ue
@@ -68,6 +75,8 @@ def _ue_legado(ue: dict[str, Any]) -> dict[str, Any]:
 
 
 def _turma_legado(turma: dict[str, Any]) -> dict[str, Any]:
+    """Formata os campos de data e hora da turma para o padrão do legado."""
+    
     return {
         chave: _formatar_data_hora_legado(valor)
         if chave in _DATAS_TURMA
@@ -77,6 +86,8 @@ def _turma_legado(turma: dict[str, Any]) -> dict[str, Any]:
 
 
 def _formatar_data_hora_legado(valor: Any) -> Any:
+    """Formata datas UTC (com 'Z') para o horário local sem fuso."""
+    
     if not isinstance(valor, str) or not valor.endswith("Z"):
         return valor
     try:
