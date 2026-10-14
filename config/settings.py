@@ -33,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "sme_sidecar_sdk.integrations.django.ObservabilityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
@@ -161,6 +162,8 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SORT_OPERATION_PARAMETERS": False,
+    "SWAGGER_UI_SETTINGS": {"deepLinking": True, "syntaxHighlight": False},
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "ApiKey": {

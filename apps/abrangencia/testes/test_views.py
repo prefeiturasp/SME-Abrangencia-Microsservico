@@ -1,5 +1,6 @@
 """Testes das views do dominio Abrangencia."""
 
+import gzip
 import json
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
@@ -18,6 +19,8 @@ from apps.abrangencia.api.views import (
     CompactaSondagemView,
     CompactaVigenteView,
     DresNomeAbreviacaoView,
+    EstruturaVigentePorDreView,
+    EstruturaVigenteView,
     PerfilView,
 )
 from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
@@ -75,6 +78,11 @@ class TestFidelidadeDasRotas(TestCase):
             "codigos-dres": (f"{_BASE}/codigos-dres", 54),
             "nome-abreviacao-dres": (f"{_BASE}/nome-abreviacao-dres", 74),
             "ciclo-ensino": (f"{_BASE}/ciclo-ensino", 242),
+            "estrutura-vigente-por-dre": (
+                f"{_BASE}/estrutura-vigente/000100",
+                94,
+            ),
+            "estrutura-vigente": (f"{_BASE}/estrutura-vigente", 115),
         }
 
         for nome, (caminho, linha_legado) in esperado.items():
@@ -589,7 +597,7 @@ _CORPO_DRES = (
 )
 
 
-def _catalogo_grande() -> bytes:
+def _lista_grande() -> bytes:
     ciclos = [
         {
             "codigoModalidadeEnsino": 1,
@@ -713,21 +721,35 @@ class TestCicloEnsinoView(SimpleTestCase):
         self, externa: MagicMock
     ) -> None:
         """Garante o corpo cru para consumidor que nao pede gzip."""
-        externa.return_value = _externa(200, _catalogo_grande())
+        externa.return_value = _externa(200, _lista_grande())
 
         resposta = self.client.get(f"{_BASE}/ciclo-ensino")
 
         self.assertFalse(resposta.has_header("Content-Encoding"))
-        self.assertEqual(resposta.content, _catalogo_grande())
+        self.assertEqual(resposta.content, _lista_grande())
 
-    def test_catalogo_vazio_responde_200_e_nunca_204(
+    def test_com_accept_encoding_gzip_comprime(
         self, externa: MagicMock
     ) -> None:
-        """Garante 200 com `[]` para catalogo vazio ou sem conteudo.
+        """Garante o response em gzip."""
+        externa.return_value = _externa(200, _lista_grande())
 
-        No legado a guarda do 204 e sempre verdadeira, e a rota nunca
-        responde 204.
-        """
+        resposta = self.client.get(
+            f"{_BASE}/ciclo-ensino", HTTP_ACCEPT_ENCODING="gzip"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta["Content-Encoding"], "gzip")
+        self.assertLess(len(resposta.content), len(_lista_grande()))
+        self.assertEqual(
+            gzip.decompress(resposta.content), _lista_grande()
+        )
+
+    def test_lista_vazio_responde_200_e_nunca_204(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante 200 com lista vazia (`[]`) caso nenhum registro seja encontrado."""
+        
         for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
             externa.return_value = _externa(status_externo, conteudo)
             with self.subTest(status=status_externo, conteudo=conteudo):
@@ -750,9 +772,207 @@ class TestCicloEnsinoView(SimpleTestCase):
         )
 
 
+_ESTRUTURA = {
+    "dres": [
+        {
+            "abreviacao": "DRE - TT",
+            "codigo": "000100",
+            "nome": "DIRETORIA TESTE",
+            "ues": [
+                {
+                    "codigo": "000191",
+                    "nome": "EMEF TESTE",
+                    "codTipoEscola": 1,
+                    "turmas": [
+                        {
+                            "anoLetivo": 2026,
+                            "codigo": 9000001,
+                            "dataFim": None,
+                            "ueCodigo": "000191",
+                        }
+                    ],
+                }
+            ],
+        }
+    ]
+}
+
+_MSG_DRE = {"detail": "O codigo da Dre é obrigatório"}
+_MSG_TURMA = {"detail": "É necessário informar ao menos uma turma"}
+
+
+def _erro_http(status_code: int, corpo: bytes = b"") -> httpx.HTTPStatusError:
+    requisicao = httpx.Request("GET", "https://pedagogico.teste")
+    return httpx.HTTPStatusError(
+        "erro",
+        request=requisicao,
+        response=httpx.Response(
+            status_code, content=corpo, request=requisicao
+        ),
+    )
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+@patch.object(PedagogicoAPI, "estrutura_vigente_por_turmas")
+@patch.object(PedagogicoAPI, "estrutura_vigente_por_dre")
+class TestEstruturaVigenteViews(SimpleTestCase):
+    """Testes de `EstruturaVigentePorDreView` e `EstruturaVigenteView`."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado por API Key."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    def _post(self, corpo: Any) -> Any:
+        return self.client.post(
+            f"{_BASE}/estrutura-vigente", data=corpo, format="json"
+        )
+
+    def test_por_dre_devolve_a_estrutura_do_cliente(
+        self, por_dre: MagicMock, _por_turmas: MagicMock
+    ) -> None:
+        """Garante o 200 com o `dict`, sem reescrita de tipos."""
+        por_dre.return_value = _ESTRUTURA
+
+        resposta = self.client.get(f"{_BASE}/estrutura-vigente/%20000100%20")
+
+        por_dre.assert_called_once_with("000100")
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.json(), _ESTRUTURA)
+
+    def test_por_turmas_envia_so_os_codigos_numericos(
+        self, _por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante `list[int]` descartando item não numérico."""
+        por_turmas.return_value = _ESTRUTURA
+
+        resposta = self._post(["123", 456, "x", " 789 ", "²"])
+
+        por_turmas.assert_called_once_with([123, 456, 789])
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(resposta.json(), _ESTRUTURA)
+
+    def test_sem_dre_responde_204_sem_corpo(
+        self, por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante 204, e não 200 com `dres: []`."""
+        por_dre.return_value = {"dres": []}
+        por_turmas.return_value = {"dres": []}
+
+        respostas = {
+            "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+            "estrutura_vigente_por_turmas": self._post(["123"]),
+        }
+
+        for endpoint, resposta in respostas.items():
+            with self.subTest(endpoint=endpoint):
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_204_NO_CONTENT
+                )
+                self.assertEqual(resposta.content, b"")
+
+    def test_codigo_dre_em_branco_responde_400_sem_chamar(
+        self, por_dre: MagicMock, _por_turmas: MagicMock
+    ) -> None:
+        """Garante a mensagem do legado."""
+        resposta = self.client.get(f"{_BASE}/estrutura-vigente/%20")
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resposta.json(), _MSG_DRE)
+        por_dre.assert_not_called()
+
+    def test_codigo_dre_nao_numerico_responde_204_sem_chamar(
+        self, por_dre: MagicMock, _por_turmas: MagicMock
+    ) -> None:
+        """Garante o 204 do legado sem arriscar 4xx no breaker do SDK."""
+        for codigo in ["abc", "10%2E5", "-1"]:
+            with self.subTest(codigo=codigo):
+                resposta = self.client.get(
+                    f"{_BASE}/estrutura-vigente/{codigo}"
+                )
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_204_NO_CONTENT
+                )
+        por_dre.assert_not_called()
+
+    def test_corpo_sem_turma_numerica_responde_400_sem_chamar(
+        self, _por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante a mensagem do legado para corpo sem código de turma."""
+        for corpo in [{}, [], ["x"], {"filtroTurmas": ["123"]}, "123"]:
+            with self.subTest(corpo=corpo):
+                resposta = self._post(corpo)
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_400_BAD_REQUEST
+                )
+                self.assertEqual(resposta.json(), _MSG_TURMA)
+        por_turmas.assert_not_called()
+
+    def test_get_sem_codigo_responde_405(
+        self, por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante que `estrutura-vigente` só aceita POST."""
+        resposta = self.client.get(f"{_BASE}/estrutura-vigente")
+
+        self.assertEqual(
+            resposta.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+        por_dre.assert_not_called()
+        por_turmas.assert_not_called()
+
+    def test_falha_do_upstream_responde_503(
+        self, por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante 503, circuito aberto e chave recusada."""
+        falhas = [
+            httpx.ConnectError("recusada"),
+            _erro_http(401),
+            _erro_http(403),
+        ]
+
+        for falha in falhas:
+            por_dre.side_effect = falha
+            por_turmas.side_effect = falha
+            respostas = {
+                "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+                "estrutura_vigente_por_turmas": self._post(["123"]),
+            }
+            for endpoint, resposta in respostas.items():
+                with self.subTest(endpoint=endpoint, falha=repr(falha)):
+                    self.assertEqual(
+                        resposta.status_code,
+                        status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
+                    self.assertEqual(
+                        resposta.json(),
+                        {"detail": "Serviço de pedagogico indisponível."},
+                    )
+
+    def test_erro_400_do_upstream_e_repassado(
+        self, por_dre: MagicMock, por_turmas: MagicMock
+    ) -> None:
+        """Garante o mesmo status e retorno nas duas rotas."""
+        por_dre.side_effect = _erro_http(400, b'{"detail": "invalido"}')
+        por_turmas.side_effect = _erro_http(400, b'{"detail": "invalido"}')
+
+        respostas = {
+            "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+            "estrutura_vigente_por_turmas": self._post(["123"]),
+        }
+
+        for endpoint, resposta in respostas.items():
+            with self.subTest(endpoint=endpoint):
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_400_BAD_REQUEST
+                )
+                self.assertEqual(resposta.json(), {"detail": "invalido"})
+
+
 @override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
 class TestRotasNovasExigemApiKey(SimpleTestCase):
-    """Garante 401 sem API Key nas tres rotas novas."""
+    """Garante 401 sem API Key nas rotas de API externa."""
 
     @patch("apps.abrangencia.api.views.PedagogicoAPI")
     @patch("apps.abrangencia.api.views.InstitucionalAPI")
@@ -769,6 +989,8 @@ class TestRotasNovasExigemApiKey(SimpleTestCase):
             ("get", "codigos-dres"),
             ("get", "nome-abreviacao-dres"),
             ("get", "ciclo-ensino"),
+            ("get", "estrutura-vigente/000100"),
+            ("post", "estrutura-vigente"),
         ]
 
         for metodo, rota in chamadas:

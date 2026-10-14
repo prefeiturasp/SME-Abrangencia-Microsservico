@@ -120,6 +120,54 @@ class CicloEnsinoSerializer(serializers.Serializer):
     dtAtualizacao = serializers.CharField()  # noqa: N815
 
 
+class TurmaEstruturaSerializer(serializers.Serializer):
+    """Representa uma turma da estrutura vigente."""
+
+    ano = serializers.CharField(allow_null=True)
+    anoLetivo = serializers.IntegerField()  # noqa: N815
+    codigo = serializers.IntegerField()
+    tipoTurma = serializers.IntegerField(allow_null=True)  # noqa: N815
+    modalidade = serializers.CharField(allow_null=True)
+    codigoModalidade = serializers.IntegerField(allow_null=True)  # noqa: N815
+    nomeTurma = serializers.CharField(allow_null=True)  # noqa: N815
+    semestre = serializers.IntegerField(allow_null=True)
+    duracaoTurno = serializers.IntegerField(allow_null=True)  # noqa: N815
+    tipoTurno = serializers.IntegerField(allow_null=True)  # noqa: N815
+    dataFim = serializers.CharField(allow_null=True)  # noqa: N815
+    ehistorico = serializers.BooleanField()
+    ensinoEspecial = serializers.BooleanField()  # noqa: N815
+    etapaEJA = serializers.IntegerField(allow_null=True)  # noqa: N815
+    serieEnsino = serializers.CharField(allow_null=True)  # noqa: N815
+    dataInicioTurma = serializers.CharField(allow_null=True)  # noqa: N815
+    extinta = serializers.BooleanField()
+    situacao = serializers.CharField(allow_null=True)
+    ueCodigo = serializers.CharField(allow_null=True)  # noqa: N815
+
+
+class UeEstruturaSerializer(serializers.Serializer):
+    """Representa uma UE da estrutura vigente e suas turmas."""
+
+    codigo = serializers.CharField()
+    nome = serializers.CharField(allow_null=True)
+    codTipoEscola = serializers.IntegerField(allow_null=True)  # noqa: N815
+    turmas = TurmaEstruturaSerializer(many=True)
+
+
+class DreEstruturaSerializer(serializers.Serializer):
+    """Representa uma DRE da estrutura vigente e suas UEs."""
+
+    abreviacao = serializers.CharField(allow_null=True)
+    codigo = serializers.CharField()
+    nome = serializers.CharField(allow_null=True)
+    ues = UeEstruturaSerializer(many=True)
+
+
+class EstruturaVigenteSerializer(serializers.Serializer):
+    """Representa DRE, UE e turma vigente."""
+
+    dres = DreEstruturaSerializer(many=True)
+
+
 class DetalheErroSerializer(serializers.Serializer):
     """Corpo de erro genérico, usado nas respostas 400 e 503 do domínio."""
 

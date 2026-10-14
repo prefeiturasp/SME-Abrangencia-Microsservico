@@ -28,12 +28,17 @@ class ClienteServico:
         self._api_key = api_key
         self._cliente: SyncHTTPClient | None = None
 
-    def get(self, path: str) -> httpx.Response:
+    def get(
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> httpx.Response:
         """Executa um GET no caminho relativo à URL base."""
+        argumentos: dict[str, Any] = {"headers": self._headers()}
+        if params is not None:
+            argumentos["params"] = params
         try:
             return cast(
                 httpx.Response,
-                self._http().get(path, headers=self._headers()),
+                self._http().get(path, **argumentos),
             )
         except CircuitOpenError as exc:
             raise self._indisponivel("GET", path) from exc
