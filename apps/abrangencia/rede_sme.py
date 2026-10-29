@@ -69,7 +69,8 @@ def tipos_escola_exibidos(ano: int) -> frozenset[int]:
         )
     ]
     tipos = frozenset(
-        int(item) for item in (valores[0] if valores else "").split(",")
+        int(item)
+        for item in (valores[0] if valores else "").split(",")
         if item.strip()
     )
     if not tipos:
@@ -172,7 +173,7 @@ class RedeSme:
         }
 
     def unidades_da_dre(self, dre: str) -> frozenset[str]:
-        """Lista as unidades que o Institucional liga a DRE, sem montar a rede."""
+        """Lista as unidades da DRE no Institucional, sem montar a rede."""
         return frozenset(
             str(unidade["codigoEol"])
             for unidade in self._api_inst().unidades_da_dre(dre)

@@ -18,7 +18,8 @@ _TTL_POR_TIPO = {"dre": TTL_LEGADO, "ue": TTL_LEGADO, "turma": TTL_TURMA}
 
 def agora() -> datetime:
     """Devolve o instante atual no fuso local."""
-    return timezone.localtime()
+    momento: datetime = timezone.localtime()
+    return momento
 
 
 class RedeSmeCacheRepository:
@@ -90,7 +91,6 @@ class RedeSmeCacheRepository:
             espera=settings.CACHE_LOCK_WAIT_TIMEOUT,
         ) as adquirido:
             yield adquirido
-
 
 
 class IntegracaoEolCacheRepository:
