@@ -64,9 +64,7 @@ class TestNivelVazio(TestCase):
 
                 for chave, valor in escopo.items():
                     if chave in niveis_vazios:
-                        self.assertEqual(
-                            valor, [], f"{tipo.name}.{chave}"
-                        )
+                        self.assertEqual(valor, [], f"{tipo.name}.{chave}")
                     else:
                         self.assertIsNone(valor, f"{tipo.name}.{chave}")
 
@@ -157,9 +155,7 @@ class TestNivelVazio(TestCase):
 
                 for chave, valor in escopo.items():
                     if chave in niveis_vazios:
-                        self.assertEqual(
-                            valor, [], f"{tipo.name}.{chave}"
-                        )
+                        self.assertEqual(valor, [], f"{tipo.name}.{chave}")
                     else:
                         self.assertIsNone(valor, f"{tipo.name}.{chave}")
 
@@ -308,31 +304,32 @@ class TestAbrangenciaCompacta(TestCase):
         self.assertEqual(compacta["idDres"], ["900100", "900300"])
         self.assertEqual(alternativo["idDres"], ["900100", "900300"])
 
-    def test_sme_compacta_le_so_os_codigos_dres(self) -> None:
-        """Garante que `COMPACTA` le os codigos sem montar a rede SME."""
+    def test_sme_le_so_os_codigos_dres_nos_dois_algoritmos(self) -> None:
+        """Garante `idDres` do SME de `codigos-dres`, sem montar a rede.
+
+        No legado, a rota de codigos das DREs e o `idDres` do SME usam o
+        mesmo metodo; montar a rede so para isso custaria cerca de 200
+        chamadas e responderia 503 por falha que nao afeta o SME.
+        """
         criar_perfil(int(TipoAbrangencia.SME))
 
-        with (
-            patch.object(
-                self.rede_sme, "codigos_dres", return_value=["900100"]
-            ) as codigos,
-            patch.object(
-                self.rede_sme, "dres", return_value=["900200"]
-            ) as da_rede,
-        ):
-            compacta = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
-            codigos.assert_called_once_with()
-            da_rede.assert_not_called()
-            codigos.reset_mock()
+        for algoritmo_alternativo in (False, True):
+            with (
+                self.subTest(algoritmo_alternativo=algoritmo_alternativo),
+                patch.object(
+                    self.rede_sme, "codigos_dres", return_value=["900100"]
+                ) as codigos,
+                patch.object(self.rede_sme, "ues") as ues,
+            ):
+                payload = self.service.abrangencia_compacta(
+                    _LOGIN,
+                    _PERFIL_GUID,
+                    algoritmo_alternativo=algoritmo_alternativo,
+                )
 
-            alternativo = self.service.abrangencia_compacta(
-                _LOGIN, _PERFIL_GUID, algoritmo_alternativo=True
-            )
-            codigos.assert_not_called()
-            da_rede.assert_called_once_with()
-
-        self.assertEqual(compacta["idDres"], ["900100"])
-        self.assertEqual(alternativo["idDres"], ["900200"])
+                codigos.assert_called_once_with()
+                ues.assert_not_called()
+                self.assertEqual(payload["idDres"], ["900100"])
 
     def test_tipo_abrangencia_sme_com_linha_preserva_escopo(self) -> None:
         """MV tem precedencia sobre a rede no tipo SME."""
@@ -680,9 +677,7 @@ class TestExpansaoDeDres(TestCase):
             TipoAbrangencia.DRE_ESCOLAS_ATRIBUIDAS,
         ):
             with self.subTest(tipo_abrangencia=tipo):
-                resultado = self.service._expandir_dres(
-                    [], ues, int(tipo)
-                )
+                resultado = self.service._expandir_dres([], ues, int(tipo))
 
                 self.assertEqual(
                     [item["codigoDRE"] for item in resultado], ["108100"]

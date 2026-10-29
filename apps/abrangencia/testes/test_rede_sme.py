@@ -66,8 +66,9 @@ _TIPOS_ESCOLA = {
 }
 
 _DRE_DA_UE = {
-    ue: dre for dre, unidades in _UNIDADES.items() for ue in
-    (unidade["codigoEol"] for unidade in unidades)
+    ue: dre
+    for dre, unidades in _UNIDADES.items()
+    for ue in (unidade["codigoEol"] for unidade in unidades)
 }
 
 
@@ -260,7 +261,7 @@ class TestUesDaRede(_BaseRede):
         self.assertEqual(rede.siglas[_UE_VIGENTE], "EMEF TESTE A")
 
     def test_rede_de_outra_versao_e_montada_de_novo(self) -> None:
-        """Garante que rede gravada sem um campo atual nao quebra a consulta."""
+        """Garante que rede gravada sem campo atual nao quebra a consulta."""
         antiga = object.__new__(_RedeSme)
         object.__setattr__(antiga, "dres", (_DRE_A,))
         self.keydb.set("abrangencia:rede-sme", antiga)
@@ -305,10 +306,6 @@ class TestUesDaRede(_BaseRede):
 
 class TestDresDaRede(_BaseRede):
     """Testes das DREs da rede."""
-
-    def test_dres_de_codigos_dres_ordenadas(self) -> None:
-        """Garante as DREs que o perfil SME recebe."""
-        self.assertEqual(self.rede_sme.dres(), [_DRE_A, _DRE_B])
 
     def test_codigos_dres_nao_montam_a_rede(self) -> None:
         """Garante so `codigos-dres`, sem unidade, estrutura nem turma."""
@@ -432,12 +429,9 @@ class TestCacheDaRede(_BaseRede):
 
         self.rede_sme.ues()
         self.nova_rede_sme().ues()
-        self.nova_rede_sme().dres()
 
         self.assertGreater(antes, 0)
-        self.assertEqual(
-            _chamadas(self.institucional, self.pedagogico), antes
-        )
+        self.assertEqual(_chamadas(self.institucional, self.pedagogico), antes)
 
     def test_consulta_por_codigo_fica_em_cache(self) -> None:
         """Garante que turma ja buscada no cache."""
@@ -454,6 +448,7 @@ class TestCacheDaRede(_BaseRede):
             self.rede_sme.ues()
 
         gravar.assert_any_call("abrangencia:rede-sme", ANY, timeout=14 * 3600)
+
 
 class TestEstruturaVigenteDividida(_BaseRede):
     """Testes da estrutura vigente dividida entre a rede SME."""
@@ -533,9 +528,7 @@ class TestLockDaMontagem(_BaseRede):
         ):
             rede.ues()
 
-        self.assertEqual(
-            _chamadas(self.institucional, self.pedagogico), antes
-        )
+        self.assertEqual(_chamadas(self.institucional, self.pedagogico), antes)
 
     def test_sem_lock_monta_mesmo_assim(self) -> None:
         """Garante a resposta mesmo sem o lock, montando a rede."""
@@ -612,9 +605,7 @@ class TestRedeIncompleta(_BaseRede):
         )
 
         self.assertIn(_UE_VIGENTE, self.nova_rede_sme().ues())
-        self.assertIsNotNone(
-            self.keydb.get("abrangencia:rede-sme")
-        )
+        self.assertIsNotNone(self.keydb.get("abrangencia:rede-sme"))
 
 
 class TestLoteVazio(_BaseRede):
@@ -631,9 +622,7 @@ class TestLoteVazio(_BaseRede):
         listar.side_effect = lambda codigos: [
             _turma(9999777, _UE_VIGENTE, 2026, "1", 5)
         ]
-        turmas = self.nova_rede_sme().turmas(
-            ["9999777"], 2026, sondagem=False
-        )
+        turmas = self.nova_rede_sme().turmas(["9999777"], 2026, sondagem=False)
 
         self.assertEqual(listar.call_count, 2)
         self.assertEqual(list(turmas), ["9999777"])
@@ -737,9 +726,7 @@ class TestCarregarRedeSme(_BaseRede):
 
         self.nova_rede_sme().ues()
 
-        self.assertEqual(
-            _chamadas(self.institucional, self.pedagogico), antes
-        )
+        self.assertEqual(_chamadas(self.institucional, self.pedagogico), antes)
         saida.write.assert_called_once()
 
     def test_rede_incompleta_falha_o_comando(self) -> None:

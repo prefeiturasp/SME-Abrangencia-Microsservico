@@ -31,7 +31,7 @@ Atributos = dict[str, dict[str, Any]]
 
 
 class RedeSmeIncompletaError(Exception):
-    """A rede inválida: resposta vazia onde nao podia."""
+    """A rede veio vazia onde não podia, e não vai para o cache."""
 
 
 @dataclass(frozen=True)
@@ -46,10 +46,16 @@ class _RedeSme:
 
 
 def tipos_escola_exibidos(ano: int) -> frozenset[int]:
-    """Le `tipos_escola_exibidos` do sistema ativo, ou o global.
+    """Lê `tipos_escola_exibidos` do sistema ativo, ou o global.
+
+    Args:
+        ano: Ano letivo do parâmetro.
+
+    Returns:
+        Os tipos de escola exibidos na listagem da rede.
 
     Raises:
-        ImproperlyConfigured: Parametro ausente ou vazio no ano.
+        ImproperlyConfigured: Parâmetro ausente ou vazio no ano.
     """
     ativos = list(
         Sistema.objects.filter(ativo=True)
@@ -86,7 +92,19 @@ def estrutura_vigente_por_dre(
     pedagogico: PedagogicoAPI | None = None,
     cache: IntegracaoEolCacheRepository | None = None,
 ) -> dict[str, Any]:
-    """Devolve a estrutura vigente da DRE, do cache."""
+    """Busca a estrutura vigente da DRE.
+
+    Args:
+        codigo_dre: Código EOL da DRE.
+        pedagogico: Cliente do MS-Pedagogico; o padrão quando ausente.
+        cache: Cache da estrutura vigente; o padrão quando ausente.
+
+    Returns:
+        `{"dres": [...]}` no formato do legado.
+
+    Raises:
+        httpx.HTTPError: O MS-Pedagogico falhou ou está fora do ar.
+    """
     cache = cache or IntegracaoEolCacheRepository()
     estrutura = cache.obter_estrutura_vigente(codigo_dre)
     if estrutura is None:
@@ -99,7 +117,15 @@ def estrutura_vigente_por_dre(
 
 
 def turma_listavel(turma: Mapping[str, Any]) -> bool:
-    """Informa se a turma e de etapa listada e tem grade curricular."""
+    """Informa se a turma é de etapa listada e tem grade curricular.
+
+    Args:
+        turma: Turma no formato de `listar-turmas`.
+
+    Returns:
+        `True` para etapa em `ETAPAS_LISTAGEM` e ano letivo a partir de
+        `ANO_INICIO_GRADE`.
+    """
     return (
         turma.get("codigo_etapa_ensino") in ETAPAS_LISTAGEM
         and (turma.get("ano_letivo") or 0) >= ANO_INICIO_GRADE
@@ -107,7 +133,15 @@ def turma_listavel(turma: Mapping[str, Any]) -> bool:
 
 
 def turma_de_sondagem(turma: Mapping[str, Any]) -> bool:
-    """Informa se a turma e de serie 1 a 6, como texto, e etapa 5 ou 13."""
+    """Informa se a turma entra na sondagem.
+
+    Args:
+        turma: Turma no formato de `listar-turmas`.
+
+    Returns:
+        `True` para série de 1 a 6, comparada como texto, e etapa de
+        sondagem.
+    """
     serie = str(turma.get("ano") or "")
     return (
         SERIE_SONDAGEM_INICIO <= serie <= SERIE_SONDAGEM_FIM
@@ -133,15 +167,15 @@ class RedeSme:
         )
         self._memo: _RedeSme | None = None
 
-    def dres(self) -> list[str]:
-        """Lista os codigos das DREs da rede, ordenados."""
-        return list(self._rede_sme().dres)
-
     def codigos_dres(self) -> list[str]:
-        """Lista os codigos das DREs da rede, ordenados.
+        """Lista os códigos das DREs do Institucional, sem montar a rede.
+
+        Returns:
+            Os códigos, ordenados.
 
         Raises:
-            RedeSmeIncompletaError: O Institucional nao trouxe DRE.
+            httpx.HTTPError: O Institucional falhou ou está fora do ar.
+            RedeSmeIncompletaError: O Institucional não trouxe DRE.
         """
         codigos = lista(self._api_inst().codigos_dres())
         if not codigos:
@@ -149,18 +183,48 @@ class RedeSme:
         return sorted(str(codigo) for codigo in codigos)
 
     def atributos_dres(self, codigos: Iterable[str]) -> Atributos:
-        """Devolve `nome` e `sigla` das DREs."""
+        """Busca nome e sigla das DREs.
+
+        Args:
+            codigos: Códigos EOL das DREs.
+
+        Returns:
+            `nome` e `sigla` por código; a DRE que o Institucional não
+            conhece fica de fora.
+
+        Raises:
+            httpx.HTTPError: O Institucional falhou ou está fora do ar.
+        """
         return {
             codigo: {"nome": dre.get("nomeDRE"), "sigla": dre.get("siglaDRE")}
             for codigo, dre in self._dres(codigos).items()
         }
 
     def ues(self) -> frozenset[str]:
-        """Lista as UEs da rede: tipo exibido e alguma turma."""
+        """Lista as UEs da rede: de tipo exibido e com turma listável.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou ao montar a rede.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         return self._rede_sme().ues
 
     def atributos_ues(self, codigos: Iterable[str]) -> Atributos:
-        """Devolve `nome`, `sigla` e `dre_codigo` das UEs da rede."""
+        """Busca nome, sigla e DRE das UEs da rede.
+
+        Args:
+            codigos: Códigos EOL das UEs.
+
+        Returns:
+            `nome`, `sigla` e `dre_codigo` por código; a UE fora da rede
+            fica de fora.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou ao montar a rede.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         rede = self._rede_sme()
         pedidas = [codigo for codigo in codigos if codigo in rede.ues]
         return {
@@ -173,7 +237,17 @@ class RedeSme:
         }
 
     def unidades_da_dre(self, dre: str) -> frozenset[str]:
-        """Lista as unidades da DRE no Institucional, sem montar a rede."""
+        """Lista as unidades da DRE no Institucional, sem montar a rede.
+
+        Args:
+            dre: Código EOL da DRE.
+
+        Returns:
+            Os códigos EOL das unidades.
+
+        Raises:
+            httpx.HTTPError: O Institucional falhou ou está fora do ar.
+        """
         return frozenset(
             str(unidade["codigoEol"])
             for unidade in self._api_inst().unidades_da_dre(dre)
@@ -186,16 +260,21 @@ class RedeSme:
         *,
         sondagem: bool,
     ) -> Atributos:
-        """Devolve `nome` e `ue_codigo` das turmas listaveis do ano.
+        """Busca nome e UE das turmas listáveis do ano.
 
         Args:
             codigos: Turmas pedidas.
             ano_letivo: Ano letivo que a turma precisa ter.
-            sondagem: Restringe as turmas de sondagem.
+            sondagem: Restringe às turmas de sondagem.
 
         Returns:
-            Turma listavel, do ano e de UE de tipo exibido. As demais nao
-            aparecem.
+            `nome` e `ue_codigo` por turma listável, do ano e de UE de
+            tipo exibido. As demais não aparecem.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         tipos = self._rede_sme().tipos_escolas_exibidos
         turmas = {
@@ -216,16 +295,43 @@ class RedeSme:
         }
 
     def turmas_de_sondagem(self, ano_letivo: int) -> Atributos:
-        """Devolve as turmas de sondagem da estrutura vigente no ano."""
+        """Busca as turmas de sondagem da estrutura vigente no ano.
+
+        Args:
+            ano_letivo: Ano letivo das turmas.
+
+        Returns:
+            `nome` e `ue_codigo` por turma, como em `turmas`.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         codigos = self._rede_sme().turmas_vigentes.get(ano_letivo, ())
         return self.turmas(codigos, ano_letivo, sondagem=True)
 
     def carregar(self) -> None:
-        """Monta a rede vigente, se ainda nao estiver no cache."""
+        """Monta a rede vigente, se ainda não estiver no cache.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou ao montar a rede.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         self._rede_sme()
 
     def _rede_sme(self) -> _RedeSme:
-        """Devolve a rede vigente, montando-a so quando ausente no cache."""
+        """Busca a rede vigente, montando-a só quando ausente no cache.
+
+        Returns:
+            A rede da instância, do cache ou recém-montada e gravada.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou ao montar a rede.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         if self._memo is not None:
             return self._memo
         rede = self._rede_sme_em_cache()
@@ -239,7 +345,11 @@ class RedeSme:
         return rede
 
     def _rede_sme_em_cache(self) -> _RedeSme | None:
-        """Le a rede do cache."""
+        """Lê a rede do cache.
+
+        Returns:
+            A rede gravada, ou `None` quando ausente ou de formato antigo.
+        """
         rede = self._cache.obter_rede_sme()
         if not isinstance(rede, _RedeSme):
             return None
@@ -247,7 +357,16 @@ class RedeSme:
         return rede if atuais <= set(vars(rede)) else None
 
     def _montar(self) -> _RedeSme:
-        """Monta a rede pelas DREs, unidades e estrutura vigente."""
+        """Monta a rede pelas DREs, unidades e estrutura vigente.
+
+        Returns:
+            A rede conferida, pronta para o cache.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede montada veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
+        """
         ano = agora().year
         tipos = tipos_escola_exibidos(ano)
         dres = sorted(
@@ -305,8 +424,15 @@ class RedeSme:
     ) -> tuple[dict[str, list[str]], list[str]]:
         """Agrupa por UE de tipo exibido as turmas da estrutura vigente.
 
+        Args:
+            dres: Códigos EOL das DREs da rede.
+            tipos: Tipos de escola exibidos.
+
         Returns:
             As turmas por UE e as DREs cuja estrutura vigente veio vazia.
+
+        Raises:
+            httpx.HTTPError: O MS-Pedagogico falhou ou está fora do ar.
         """
         vigentes: dict[str, list[str]] = {}
         sem_estrutura: list[str] = []
@@ -327,7 +453,18 @@ class RedeSme:
         return vigentes, sem_estrutura
 
     def _tem_turma_listavel(self, ue: str, ano: int) -> bool:
-        """Procura turma da UE no ano e, sem ela, nos anteriores."""
+        """Procura turma listável da UE no ano e, sem ela, nos anteriores.
+
+        Args:
+            ue: Código EOL da UE.
+            ano: Ano letivo corrente.
+
+        Returns:
+            `True` se alguma turma da UE for listável.
+
+        Raises:
+            httpx.HTTPError: O MS-Pedagogico falhou ou está fora do ar.
+        """
         for anos in ([ano], list(range(ANO_INICIO_GRADE, ano))):
             if not anos:
                 continue
@@ -359,7 +496,20 @@ class RedeSme:
         buscar: Callable[[list[str]], list[dict[str, Any]]],
         campo: str,
     ) -> Atributos:
-        """Le do cache por codigo."""
+        """Lê os atributos do cache por código e busca o que falta.
+
+        Args:
+            tipo: `dre`, `ue` ou `turma`, prefixo da chave no cache.
+            codigos: Códigos pedidos.
+            buscar: Chamada ao MS para um lote de códigos.
+            campo: Campo do item que traz o código.
+
+        Returns:
+            Os atributos por código; o código ausente fica de fora.
+
+        Raises:
+            httpx.HTTPError: O MS falhou ou está fora do ar.
+        """
         pedidos = [c for c in dict.fromkeys(codigos) if c]
         achados = self._cache.obter_codigos(tipo, pedidos)
         faltam = [codigo for codigo in pedidos if codigo not in achados]
@@ -396,6 +546,11 @@ def _validar(
 ) -> None:
     """Recusa a rede que ficou vazia, antes de ir para o cache.
 
+    Args:
+        rede: Rede recém-montada.
+        dres_sem_unidade: DREs sem unidade no Institucional.
+        dres_sem_estrutura: DREs sem estrutura vigente no MS-Pedagogico.
+
     Raises:
         RedeSmeIncompletaError: Com o que faltou.
     """
@@ -421,5 +576,9 @@ def _texto(valor: Any) -> str:
 
 
 def obter_rede_sme() -> RedeSme:
-    """Devolve uma rede nova, para um request."""
+    """Cria uma rede nova, para um request.
+
+    Returns:
+        Uma `RedeSme` sem rede em memória, que lê do cache no primeiro uso.
+    """
     return RedeSme()

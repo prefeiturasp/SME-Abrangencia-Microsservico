@@ -93,10 +93,6 @@ class RedeSmeFalsa:
         }
         return self
 
-    def dres(self) -> list[str]:
-        """Lista as DREs da rede."""
-        return sorted(self._dres)
-
     def codigos_dres(self) -> list[str]:
         """Lista as DREs da rede, como `codigos-dres`."""
         return sorted(self._dres)
@@ -132,9 +128,7 @@ class RedeSmeFalsa:
             and (not sondagem or turma["sondagem"])
         }
 
-    def turmas_de_sondagem(
-        self, ano_letivo: int
-    ) -> dict[str, dict[str, Any]]:
+    def turmas_de_sondagem(self, ano_letivo: int) -> dict[str, dict[str, Any]]:
         """Devolve as turmas de sondagem da rede."""
         return self.turmas(sorted(self._turmas), ano_letivo, sondagem=True)
 

@@ -21,6 +21,4 @@ class Command(BaseCommand):
             raise CommandError(f"Rede indisponivel: {exc}") from exc
         except RedeSmeIncompletaError as exc:
             raise CommandError(f"Rede SME incompleta: {exc}") from exc
-        self.stdout.write(
-            f"Rede montada: {len(rede.dres())} DREs, {len(rede.ues())} UEs."
-        )
+        self.stdout.write(f"Rede montada: {len(rede.ues())} UEs.")

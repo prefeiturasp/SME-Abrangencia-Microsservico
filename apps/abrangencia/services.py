@@ -96,7 +96,7 @@ class AbrangenciaService:
         Args:
             perfil_guid: GUID do perfil consultado.
             funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai
-                sem funcao  ver `_perfil_com_vinculos`.
+                sem funcao; ver `_perfil_com_vinculos`.
             eh_grupo_manual: Informa se o grupo do perfil e manual.
 
         Returns:
@@ -144,6 +144,11 @@ class AbrangenciaService:
         Returns:
             Payload com as oito chaves do contrato, sempre presentes.
             Campo nao expandido sai `None`, nunca `[]`.
+
+        Raises:
+            httpx.HTTPError: Falhou ao trazer o que e da rede.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         ano = ano_letivo if ano_letivo is not None else self._ano_letivo()
         tipo_resolucao = (
@@ -160,9 +165,7 @@ class AbrangenciaService:
             login, perfil_guid, ano, tipo_resolucao
         )
         if tipo_abrangencia == TipoAbrangencia.SME and not codigos["idDres"]:
-            dres_da_rede: Codigos = list(
-                self._dres_da_rede(algoritmo_alternativo=algoritmo_alternativo)
-            )
+            dres_da_rede: Codigos = list(self._rede_sme.codigos_dres())
             codigos = {**codigos, "idDres": dres_da_rede}
         if algoritmo_alternativo and tipo_abrangencia == TipoAbrangencia.DRE:
             codigos = self._limitar_dre_unica(codigos)
@@ -244,8 +247,10 @@ class AbrangenciaService:
             perfis: GUIDs dos perfis consultados.
 
         Returns:
-            Um registro por usuario. A chave `perfils` (sem o "i") segue
-            a grafia do contrato consumido pelos sistemas integrados.
+            Um registro por usuario.
+
+        Raises:
+            httpx.HTTPError: Com `dre`, o Institucional falhou.
         """
         usuarios: dict[str, dict[str, Any]] = {}
         for registro in self._usuarios_por_perfil(ue, dre, perfis):
@@ -265,7 +270,7 @@ class AbrangenciaService:
         """Resolve o ano letivo default do ambiente.
 
         Returns:
-            `ABRANGENCIA_ANO_LETIVO`, com fallback para o ano corrente.
+            O valor de `ABRANGENCIA_ANO_LETIVO`, como inteiro.
         """
         return int(settings.ABRANGENCIA_ANO_LETIVO)
 
@@ -402,11 +407,11 @@ class AbrangenciaService:
         Args:
             tipo_abrangencia: Abrangencia do perfil.
             eh_perfil_manual: Flag agregado do perfil.
-            grupo_codigo: Grupo do perfil, que a guarda de 241 cita.
+            grupo_codigo: Grupo do perfil.
 
         Returns:
-            Verdadeiro quando o tipo de abrangencia e o grupo mantem
-            o `null` de 233.
+            Verdadeiro para tipo UE com perfil manual ou do grupo de
+            comunicados da UE.
         """
         if tipo_abrangencia not in (
             TipoAbrangencia.UE,
@@ -490,21 +495,6 @@ class AbrangenciaService:
             ordenados.insert(0, None)
         return ordenados
 
-    def _dres_da_rede(self, *, algoritmo_alternativo: bool) -> list[str]:
-        """Lista as DREs da rede para o tipo SME sem linha na MV.
-
-        Args:
-            algoritmo_alternativo: `DETALHES` le as DREs da rede SME
-                montada; `COMPACTA` le so os codigos de `codigos-dres`,
-                sem montar a rede, porque nao expande colecao nenhuma.
-
-        Returns:
-            Codigos das DREs da rede, ordenados.
-        """
-        if algoritmo_alternativo:
-            return self._rede_sme.dres()
-        return self._rede_sme.codigos_dres()
-
     def _escopo_veio_de_contrato_externo(
         self,
         login: str,
@@ -541,6 +531,11 @@ class AbrangenciaService:
         Returns:
             Uma entrada por UE da rede, ordenada por codigo. UE fora da rede
             fica so no identificador, como num LEFT JOIN.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         pedidas = _sem_nulos(id_ues) or sorted(self._rede_sme.ues())
         ues = self._rede_sme.atributos_ues(pedidas)
@@ -560,6 +555,11 @@ class AbrangenciaService:
         Returns:
             Uma entrada por UE da rede cujo pai esta em `id_dres`, ou a
             rede inteira no tipo de abrangencia SME.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         ues = self._rede_sme.atributos_ues(sorted(self._rede_sme.ues()))
         dres = set(id_dres)
@@ -587,6 +587,9 @@ class AbrangenciaService:
         Returns:
             Uma entrada por DRE encontrada no Institucional, ordenada por
             codigo.
+
+        Raises:
+            httpx.HTTPError: O Institucional falhou.
         """
         if tipo_abrangencia in _TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE:
             codigos = sorted(
@@ -620,6 +623,11 @@ class AbrangenciaService:
         Returns:
             Turmas elegiveis, ordenadas por codigo. Sem nenhuma
             elegivel, a lista vazia.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         turmas = (
             self._rede_sme.turmas(id_turmas, ano_letivo, sondagem=True)
@@ -714,8 +722,9 @@ class AbrangenciaService:
             perfil_guid: GUID do perfil consultado.
 
         Returns:
-            `abrangencia_id`  None quando o perfil nao existe,
-            `eh_perfil_manual`, o flag agregado e `grupo_codigo`.
+            `abrangencia_id`, `eh_perfil_manual` (o flag agregado) e
+            `grupo_codigo`; `(None, False, None)` quando o perfil nao
+            existe.
         """
         perfil = (
             Perfil.objects.filter(perfil_guid=perfil_guid)
@@ -736,10 +745,19 @@ class AbrangenciaService:
         dre: str | None,
         perfis: list[str],
     ) -> list[dict]:
-        """Seleciona usuarios pelo filtro e retorna todos os perfis dele.
+        """Seleciona usuarios pelo filtro e retorna todos os perfis deles.
+
+        Args:
+            ue: Codigo da UE em que o usuario precisa estar lotado.
+            dre: Codigo da DRE; exige lotacao em alguma UE dela. None
+                nao filtra.
+            perfis: GUIDs dos perfis consultados na UE.
 
         Returns:
             Um registro por par `(login, perfil)`, com as UEs ordenadas.
+
+        Raises:
+            httpx.HTTPError: Com `dre`, o Institucional falhou.
         """
         base = UsuarioPorPerfil.objects.filter(ano_letivo=self._ano_letivo())
         selecao = base.filter(ue_codigo=ue, perfil_guid__in=perfis)
@@ -775,6 +793,15 @@ class AbrangenciaService:
 
 
 def _ue_expandida(codigo: str, ue: Mapping[str, Any]) -> dict[str, Any]:
+    """Monta a entrada de `ues[]` com as chaves do contrato.
+
+    Args:
+        codigo: Codigo EOL da UE.
+        ue: Atributos da UE vindos da rede SME.
+
+    Returns:
+        `codigo`, `codigoDRE`, `nome` e `sigla`.
+    """
     return {
         "codigo": codigo,
         "codigoDRE": ue["dre_codigo"],

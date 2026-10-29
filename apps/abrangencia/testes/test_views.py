@@ -265,12 +265,8 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
             abrangencia_id=1,
             eh_perfil_manual=False,
         )
-        criar_escopo(
-            tipo_resolucao="COMPACTA", ue_codigo="019331"
-        )
-        criar_escopo(
-            tipo_resolucao="DETALHES", ue_codigo="094811"
-        )
+        criar_escopo(tipo_resolucao="COMPACTA", ue_codigo="019331")
+        criar_escopo(tipo_resolucao="DETALHES", ue_codigo="094811")
 
     def test_rotas_detalhadas_devolvem_o_escopo_de_detalhes(self) -> None:
         """Garante que as rotas detalhadas leem `DETALHES`."""
@@ -292,9 +288,7 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
         Perfil.objects.filter(perfil_guid=_PERFIL_GUID).update(
             abrangencia_id=6
         )
-        criar_escopo(
-            tipo_resolucao="DETALHES", dre_codigo="108100"
-        )
+        criar_escopo(tipo_resolucao="DETALHES", dre_codigo="108100")
         usar_rede_sme(self).com_dre("108100", nome="DRE Ipiranga", sigla="IP")
 
         e08 = self.client.get(
@@ -331,9 +325,7 @@ class TestCompactaSondagemView(TestCase):
 
     def test_tipo_professor_expande_so_turmas(self) -> None:
         """Tipo Professor expande somente turmas."""
-        criar_escopo(
-            tipo_resolucao="DETALHES", turma_codigo="1234"
-        )
+        criar_escopo(tipo_resolucao="DETALHES", turma_codigo="1234")
         self.rede_sme.com_turma("1234", nome="1o Ano A", ue="019331")
 
         resposta = self.client.get(
@@ -352,9 +344,7 @@ class TestCompactaSondagemView(TestCase):
         self,
     ) -> None:
         """Garante que o recorte de sondagem vale so para `turmas[]`."""
-        criar_escopo(
-            tipo_resolucao="DETALHES", turma_codigo="9999"
-        )
+        criar_escopo(tipo_resolucao="DETALHES", turma_codigo="9999")
         self.rede_sme.com_turma("9999", sondagem=False)
 
         resposta = self.client.get(
@@ -387,9 +377,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
     def test_colecoes_expandidas_trazem_atributos_da_mv(self) -> None:
         """Garante nome, sigla e pai preenchidos, e `dres` vinda das UEs."""
-        criar_escopo(
-            tipo_resolucao="DETALHES", ue_codigo="019331"
-        )
+        criar_escopo(tipo_resolucao="DETALHES", ue_codigo="019331")
         self.rede_sme.com_ue(
             "019331", nome="EMEF Teste", sigla="EMEF T", dre="108100"
         )
@@ -542,16 +530,12 @@ class TestPerfisUsuariosView(TestCase):
                 respostas[content_type] = resposta.json()
 
         self.assertEqual(len(respostas), 3)
-        self.assertEqual(
-            respostas["text/json"], respostas["application/json"]
-        )
+        self.assertEqual(respostas["text/json"], respostas["application/json"])
         self.assertEqual(
             respostas["application/json-patch+json"],
             respostas["application/json"],
         )
-        self.assertEqual(
-            respostas["application/json"][0]["usuarioRf"], _LOGIN
-        )
+        self.assertEqual(respostas["application/json"][0]["usuarioRf"], _LOGIN)
 
     def test_content_type_text_plain_responde_415(self) -> None:
         """Garante que content-type fora de JSON continua recusado."""
@@ -614,7 +598,7 @@ class TestDresDaRedeViews(SimpleTestCase):
     def test_codigos_dres_repassa_o_corpo_do_institucional(
         self, externa: MagicMock
     ) -> None:
-        """Garante E-02 com os mesmos bytes do MS-Institucional."""
+        """Garante retorno com os mesmos bytes do MS-Institucional."""
         externa.return_value = _externa(200, _CORPO_CODIGOS_DRES)
 
         resposta = self.client.get(f"{_BASE}/codigos-dres")
@@ -627,7 +611,7 @@ class TestDresDaRedeViews(SimpleTestCase):
     def test_nome_abreviacao_repassa_o_corpo_do_institucional(
         self, externa: MagicMock
     ) -> None:
-        """Garante E-03 com os mesmos bytes do MS-Institucional."""
+        """Garante retorno com os mesmos bytes do MS-Institucional."""
         externa.return_value = _externa(200, _CORPO_DRES)
 
         resposta = self.client.get(f"{_BASE}/nome-abreviacao-dres")
@@ -717,9 +701,7 @@ class TestCicloEnsinoView(SimpleTestCase):
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         self.assertEqual(resposta["Content-Encoding"], "gzip")
         self.assertLess(len(resposta.content), len(_lista_grande()))
-        self.assertEqual(
-            gzip.decompress(resposta.content), _lista_grande()
-        )
+        self.assertEqual(gzip.decompress(resposta.content), _lista_grande())
 
     def test_lista_vazio_responde_200_e_nunca_204(
         self, externa: MagicMock
@@ -914,8 +896,8 @@ class TestEstruturaVigenteViews(SimpleTestCase):
             por_turmas.side_effect = falha
             respostas = {
                 "estrutura_vigente_por_dre": self.client.get(
-                f"{_BASE}/estrutura-vigente/000100"
-            ),
+                    f"{_BASE}/estrutura-vigente/000100"
+                ),
                 "estrutura_vigente_por_turmas": self._post(["123"]),
             }
             for endpoint, resposta in respostas.items():
@@ -1022,7 +1004,6 @@ class TestFalhaDosMsNasRotasDeEscopo(TestCase):
 
     def _falhar(self, erro: Exception) -> None:
         metodos = (
-            "dres",
             "codigos_dres",
             "ues",
             "unidades_da_dre",
@@ -1034,7 +1015,7 @@ class TestFalhaDosMsNasRotasDeEscopo(TestCase):
             self.addCleanup(troca.stop)
 
     def test_compactas_respondem_503(self) -> None:
-        """Garante 503 em E-07 a E-10 com o MS fora ou com erro.
+        """Garante 503 em retorno com o MS fora ou com erro.
 
         Lista vazia e resposta valida do contrato: o consumidor nao
         distinguiria a falha.
@@ -1065,7 +1046,7 @@ class TestFalhaDosMsNasRotasDeEscopo(TestCase):
                     self.assertEqual(resposta.json(), _INDISPONIVEL_REDE)
 
     def test_usuarios_por_perfil_com_dre_responde_503(self) -> None:
-        """Garante 503 em E-13 quando o filtro de DRE nao chega ao MS."""
+        """Garante 503 quando o filtro de DRE nao chega ao MS."""
         for caso, erro in _falhas_do_ms().items():
             self._falhar(erro)
             with self.subTest(caso=caso):
@@ -1084,7 +1065,7 @@ class TestFalhaDosMsNasRotasDeEscopo(TestCase):
                 )
 
     def test_usuarios_por_perfil_sem_dre_nao_chama_o_ms(self) -> None:
-        """Garante que E-13 sem DRE nao depende do MS."""
+        """Garante que retorno sem DRE nao depende do MS."""
         self._falhar(httpx.ConnectError("recusada"))
 
         resposta = self.client.post(
@@ -1112,7 +1093,7 @@ _ESTRUTURA_FICTICIA = {
     API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", CACHES=_CACHE_LOCAL
 )
 class TestCacheDosRepasses(SimpleTestCase):
-    """Garante o cache de E-03 e E-04, com o TTL do legado, e E-02 sem."""
+    """Garante o cache de retorno e retorno, com o TTL do legado, e retorno sem."""
 
     def setUp(self) -> None:
         """Prepara um client autenticado e o cache limpo."""
@@ -1152,9 +1133,7 @@ class TestCacheDosRepasses(SimpleTestCase):
 
     def test_corpo_que_nao_e_lista_nao_entra_no_cache(self) -> None:
         """Garante que so lista JSON vai para o cache."""
-        with patch.object(
-            InstitucionalAPI, "dres_nome_abreviacao"
-        ) as externa:
+        with patch.object(InstitucionalAPI, "dres_nome_abreviacao") as externa:
             externa.return_value = _externa(200, b'{"codigo": "1"}')
 
             self.client.get(f"{_BASE}/nome-abreviacao-dres")
@@ -1163,10 +1142,8 @@ class TestCacheDosRepasses(SimpleTestCase):
         self.assertEqual(externa.call_count, 2)
 
     def test_nome_abreviacao_vem_do_cache_na_segunda_chamada(self) -> None:
-        """Garante uma so chamada ao Institucional para E-03."""
-        with patch.object(
-            InstitucionalAPI, "dres_nome_abreviacao"
-        ) as externa:
+        """Garante uma so chamada ao Institucional para retorno."""
+        with patch.object(InstitucionalAPI, "dres_nome_abreviacao") as externa:
             externa.return_value = _externa(200, _CORPO_DRES)
 
             primeira = self.client.get(f"{_BASE}/nome-abreviacao-dres")
@@ -1177,7 +1154,7 @@ class TestCacheDosRepasses(SimpleTestCase):
         self.assertEqual(segunda.json(), primeira.json())
 
     def test_codigos_dres_nao_tem_cache_aqui(self) -> None:
-        """Garante E-02 sempre no Institucional, que ja guarda a lista.
+        """Garante retorno sempre no Institucional, que ja guarda a lista.
 
         O MS-Institucional mantem `codigos-dres` no cache dele; uma copia
         aqui so somaria um segundo prazo de validade.
@@ -1227,7 +1204,7 @@ class TestCacheDosRepasses(SimpleTestCase):
     def test_estrutura_sem_dre_nao_entra_no_cache(
         self, externa: MagicMock
     ) -> None:
-        """Garante que o 204 de E-04 nao fica guardado."""
+        """Garante que o 204 de retorno nao fica guardado."""
         externa.return_value = {"dres": []}
 
         for _ in range(2):
@@ -1241,7 +1218,7 @@ class TestCacheDosRepasses(SimpleTestCase):
     API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", CACHES=_CACHE_LOCAL
 )
 class TestCacheDoPerfil(TestCase):
-    """Garante o cache de E-01, com o TTL do legado."""
+    """Garante o cache com o TTL do legado."""
 
     def setUp(self) -> None:
         """Prepara um client autenticado e o cache limpo."""
@@ -1251,7 +1228,7 @@ class TestCacheDoPerfil(TestCase):
         self.addCleanup(caches["keydb"].clear)
 
     def test_perfil_vem_do_cache_na_segunda_chamada(self) -> None:
-        """Garante uma so consulta ao banco para o mesmo perfil. """
+        """Garante uma so consulta ao banco para o mesmo perfil."""
         with patch(
             "apps.abrangencia.api.views.AbrangenciaService.grupo_cargos",
             autospec=True,
