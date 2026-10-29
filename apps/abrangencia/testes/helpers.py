@@ -122,7 +122,7 @@ class RedeSmeFalsa:
         return frozenset(c for c, pai in self._unidades.items() if pai == dre)
 
     def turmas(
-        self, codigos: Iterable[str], sondagem: bool
+        self, codigos: Iterable[str], _ano_letivo: int, *, sondagem: bool
     ) -> dict[str, dict[str, Any]]:
         """Devolve as turmas pedidas que estão na rede."""
         return {
