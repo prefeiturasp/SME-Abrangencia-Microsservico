@@ -5,12 +5,13 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 
 from apps.abrangencia.constants import TipoAbrangencia
-from apps.abrangencia.models import Perfil
-from apps.abrangencia.services import AbrangenciaService
-from apps.abrangencia.testes.helpers import (
-    criar_escopo,
-    criar_unidade,
+from apps.abrangencia.models import (
+    AbrangenciaResolvida,
+    Perfil,
+    UsuarioPorPerfil,
 )
+from apps.abrangencia.services import AbrangenciaService
+from apps.abrangencia.testes.helpers import criar_escopo, usar_rede_sme
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
 _LOGIN = "9999001"
@@ -206,14 +207,11 @@ class TestEscopoPorAlgoritmo(TestCase):
 
     def setUp(self) -> None:
         """Cria escopos distintos para os dois algoritmos."""
+        usar_rede_sme(self)
         self.service = AbrangenciaService()
         criar_perfil(int(TipoAbrangencia.UE))
-        criar_escopo(
-            tipo_resolucao="COMPACTA", tipo_escopo="UE", ue_codigo="019331"
-        )
-        criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="UE", ue_codigo="094811"
-        )
+        criar_escopo(tipo_resolucao="COMPACTA", ue_codigo="019331")
+        criar_escopo(tipo_resolucao="DETALHES", ue_codigo="094811")
 
     def test_fluxo_compacto_le_somente_as_linhas_compactas(self) -> None:
         """Monta o escopo compacto."""
@@ -231,11 +229,59 @@ class TestEscopoPorAlgoritmo(TestCase):
 
 
 @override_settings(ABRANGENCIA_ANO_LETIVO=_ANO)
+class TestNivelPeloCodigo(TestCase):
+    """Testes do nivel de cada linha, sem `tipo_escopo`."""
+
+    def setUp(self) -> None:
+        """Instancia o servico."""
+        usar_rede_sme(self)
+        self.service = AbrangenciaService()
+
+    def test_codigo_mais_fino_preenchido_decide_o_nivel(self) -> None:
+        """Garante turma antes de UE, e UE antes de DRE."""
+        criar_escopo(turma_codigo="9999101", ue_codigo="900101")
+        criar_escopo(ue_codigo="900102", dre_codigo="900100")
+        criar_escopo(dre_codigo="900200")
+
+        escopo = self.service._escopo_resolvido(
+            _LOGIN, _PERFIL_GUID, _ANO, "COMPACTA"
+        )
+
+        self.assertEqual(
+            escopo,
+            {
+                "idDres": ["900200"],
+                "idUes": ["900102"],
+                "idTurmas": ["9999101"],
+            },
+        )
+
+    def test_linha_sem_codigo_da_origem_de_exercicio_e_ue_nula(self) -> None:
+        """Garante `idUes: [null]` so nas origens de exercicio."""
+        for origem, esperado in (
+            ("LOTACAO_EXERCICIO", [None]),
+            ("LOTACAO_CARGO", []),
+        ):
+            with self.subTest(origem=origem):
+                AbrangenciaResolvida.objects.all().delete()
+                criar_escopo(origem=origem)
+
+                escopo = self.service._escopo_resolvido(
+                    _LOGIN, _PERFIL_GUID, _ANO, "COMPACTA"
+                )
+
+                self.assertEqual(escopo["idUes"], esperado)
+                self.assertEqual(escopo["idDres"], [])
+                self.assertEqual(escopo["idTurmas"], [])
+
+
+@override_settings(ABRANGENCIA_ANO_LETIVO=_ANO)
 class TestAbrangenciaCompacta(TestCase):
     """Testes de `AbrangenciaService.abrangencia_compacta`."""
 
     def setUp(self) -> None:
-        """Instancia o servico."""
+        """Instancia o servico com uma rede vazia."""
+        self.rede_sme = usar_rede_sme(self)
         self.service = AbrangenciaService()
 
     def test_perfil_sem_escopo_respeita_tipo_abrangencia(self) -> None:
@@ -249,37 +295,61 @@ class TestAbrangenciaCompacta(TestCase):
         self.assertEqual(payload["idTurmas"], [])
         self.assertIsNotNone(payload["abrangencia"])
 
-    def test_tipo_abrangencia_sme_sem_linha_devolve_rede(self) -> None:
-        """Garante que o tipo de abrangencia SME sem escopo cai para a rede."""
+    def test_tipo_abrangencia_sme_recebe_as_dres_da_rede(self) -> None:
+        """Garante que o SME recebe as DREs de `codigos-dres`."""
         criar_perfil(int(TipoAbrangencia.SME))
-        criar_unidade(tipo_escopo="DRE", codigo="108100")
-        criar_unidade(tipo_escopo="DRE", codigo="108200")
+        self.rede_sme.com_dre("900100").com_dre("900300")
 
-        sem_vinculo = self.service.abrangencia_compacta("999999", _PERFIL_GUID)
+        compacta = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
         alternativo = self.service.abrangencia_compacta(
-            "999999", _PERFIL_GUID, algoritmo_alternativo=True
+            _LOGIN, _PERFIL_GUID, algoritmo_alternativo=True
         )
 
-        self.assertEqual(sem_vinculo["idDres"], ["108100", "108200"])
-        self.assertEqual(alternativo["idDres"], ["108100", "108200"])
+        self.assertEqual(compacta["idDres"], ["900100", "900300"])
+        self.assertEqual(alternativo["idDres"], ["900100", "900300"])
+
+    def test_sme_compacta_le_so_os_codigos_dres(self) -> None:
+        """Garante que `COMPACTA` le os codigos sem montar a rede SME."""
+        criar_perfil(int(TipoAbrangencia.SME))
+
+        with (
+            patch.object(
+                self.rede_sme, "codigos_dres", return_value=["900100"]
+            ) as codigos,
+            patch.object(
+                self.rede_sme, "dres", return_value=["900200"]
+            ) as da_rede,
+        ):
+            compacta = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
+            codigos.assert_called_once_with()
+            da_rede.assert_not_called()
+            codigos.reset_mock()
+
+            alternativo = self.service.abrangencia_compacta(
+                _LOGIN, _PERFIL_GUID, algoritmo_alternativo=True
+            )
+            codigos.assert_not_called()
+            da_rede.assert_called_once_with()
+
+        self.assertEqual(compacta["idDres"], ["900100"])
+        self.assertEqual(alternativo["idDres"], ["900200"])
 
     def test_tipo_abrangencia_sme_com_linha_preserva_escopo(self) -> None:
         """MV tem precedencia sobre a rede no tipo SME."""
         criar_perfil(int(TipoAbrangencia.SME))
-        criar_unidade(tipo_escopo="DRE", codigo="108100")
-        criar_unidade(tipo_escopo="DRE", codigo="108200")
-        criar_escopo(tipo_escopo="DRE", dre_codigo="108100")
+        self.rede_sme.com_dre("108100").com_dre("108200")
+        criar_escopo(dre_codigo="108100")
 
         payload = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
 
         self.assertEqual(payload["idDres"], ["108100"])
 
     def test_tipo_abrangencia_dre_expande_ues_por_id_dres(self) -> None:
-        """Tipo de abrangencia DRE expande UEs pelo pai informado."""
+        """Tipo de abrangencia DRE expande UEs pelo dre_codigo."""
         criar_perfil(int(TipoAbrangencia.DRE))
-        criar_escopo(tipo_escopo="DRE", dre_codigo="108100")
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(codigo="094811", dre_codigo_pai="108200")
+        criar_escopo(dre_codigo="108100")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_ue("094811", dre="108200")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN, _PERFIL_GUID, expandir_ues=True
@@ -355,15 +425,6 @@ class TestAbrangenciaCompacta(TestCase):
 
         self.assertEqual(payload["idUes"], [])
 
-    def test_ignora_tipo_de_escopo_desconhecido(self) -> None:
-        """Tipo de escopo desconhecido nao entra no payload."""
-        criar_perfil(int(TipoAbrangencia.UE), grupo_codigo=12)
-        criar_escopo(tipo_escopo="OUTRO", ue_codigo="019331")
-
-        payload = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
-
-        self.assertEqual(payload["idUes"], [])
-
     def test_contrato_externo_nao_zera_turma_do_poa(self) -> None:
         """Contrato externo mantem `idTurmas` nulo no POA."""
         criar_perfil(int(TipoAbrangencia.UE_TURMAS_DISCIPLINAS))
@@ -378,7 +439,7 @@ class TestAbrangenciaCompacta(TestCase):
         criar_perfil(int(TipoAbrangencia.UE), grupo_codigo=3)
         criar_escopo(origem="LOTACAO_EXERCICIO", ue_codigo=None)
         criar_escopo(origem="LOTACAO_EXERCICIO", ue_codigo="019331")
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
+        self.rede_sme.com_ue("019331", dre="108100")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN, _PERFIL_GUID, expandir_ues=True
@@ -390,16 +451,8 @@ class TestAbrangenciaCompacta(TestCase):
     def test_detalhes_tipo_dre_devolve_uma_unica_dre(self) -> None:
         """Garante uma so DRE no tipo de abrangencia Dre detalhado."""
         criar_perfil(int(TipoAbrangencia.DRE))
-        criar_escopo(
-            tipo_resolucao="DETALHES",
-            tipo_escopo="DRE",
-            dre_codigo="109000",
-        )
-        criar_escopo(
-            tipo_resolucao="DETALHES",
-            tipo_escopo="DRE",
-            dre_codigo="094530",
-        )
+        criar_escopo(tipo_resolucao="DETALHES", dre_codigo="109000")
+        criar_escopo(tipo_resolucao="DETALHES", dre_codigo="094530")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN,
@@ -414,8 +467,8 @@ class TestAbrangenciaCompacta(TestCase):
     def test_detalhes_no_tipo_ue_nao_deriva_dres(self) -> None:
         """Garante `dres: []` no tipo de abrangencia UE sem UEs detalhadas."""
         criar_perfil(int(TipoAbrangencia.UE), grupo_codigo=12)
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(tipo_escopo="DRE", codigo="108100", nome="DRE Ipiranga")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_dre("108100", nome="DRE Ipiranga")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN,
@@ -432,10 +485,10 @@ class TestAbrangenciaCompacta(TestCase):
         """Com `ues` pedida, `dres[]` volta a derivar do pai delas."""
         criar_perfil(int(TipoAbrangencia.UE), grupo_codigo=12)
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="UE", ue_codigo="019331"
+            tipo_resolucao="DETALHES", ue_codigo="019331", dre_codigo="108100"
         )
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(tipo_escopo="DRE", codigo="108100", nome="DRE Ipiranga")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_dre("108100", nome="DRE Ipiranga")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN,
@@ -451,8 +504,8 @@ class TestAbrangenciaCompacta(TestCase):
     def test_colecao_nao_pedida_sai_none(self) -> None:
         """Colecao que o endpoint nao pede vem `null`, nunca `[]`."""
         criar_perfil(int(TipoAbrangencia.UE))
-        criar_escopo(tipo_escopo="UE", ue_codigo="019331")
-        criar_unidade(codigo="019331")
+        criar_escopo(ue_codigo="019331")
+        self.rede_sme.com_ue("019331")
 
         payload = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
 
@@ -463,23 +516,18 @@ class TestAbrangenciaCompacta(TestCase):
     def test_nivel_com_linha_na_mv_nao_e_zerado_pelo_tipo(self) -> None:
         """Garante que o tipo de abrangencia nao recorta a MV de novo."""
         criar_perfil(int(TipoAbrangencia.DRE_ESCOLAS_ATRIBUIDAS))
-        criar_escopo(tipo_escopo="DRE", dre_codigo="108100")
+        criar_escopo(dre_codigo="108100")
 
         payload = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
 
         self.assertEqual(payload["idDres"], ["108100"])
 
-    def test_codigo_sem_par_na_unidade_fica_so_no_identificador(self) -> None:
+    def test_codigo_sem_par_na_rede_fica_so_no_identificador(self) -> None:
         """Identificador e lista expandida sao recortes diferentes."""
         criar_perfil(int(TipoAbrangencia.DRE))
-        criar_escopo(tipo_escopo="DRE", dre_codigo="108100")
-        criar_escopo(tipo_escopo="DRE", dre_codigo="999999")
-        criar_unidade(
-            tipo_escopo="DRE",
-            codigo="108100",
-            nome="DRE Ipiranga",
-            sigla="IP",
-        )
+        criar_escopo(dre_codigo="108100")
+        criar_escopo(dre_codigo="999999")
+        self.rede_sme.com_dre("108100", nome="DRE Ipiranga", sigla="IP")
 
         payload = self.service.abrangencia_compacta(
             _LOGIN, _PERFIL_GUID, expandir_dres=True
@@ -504,18 +552,16 @@ class TestExpansaoDeUes(TestCase):
 
     def setUp(self) -> None:
         """Instancia o servico."""
+        self.rede_sme = usar_rede_sme(self)
         self.service = AbrangenciaService()
 
-    def test_traz_nome_sigla_e_dre_pai_da_mv_de_unidade(self) -> None:
+    def test_traz_nome_sigla_e_dre_pai_da_rede(self) -> None:
         """Garante que `ues[]` sai com os atributos reais, nao `null`."""
-        criar_unidade(
-            codigo="019331",
-            nome="EMEF Teste",
-            sigla="EMEF T",
-            dre_codigo_pai="108100",
+        self.rede_sme.com_ue(
+            "019331", nome="EMEF Teste", sigla="EMEF T", dre="108100"
         )
 
-        resultado = self.service._expandir_ues(["019331"], _ANO)
+        resultado = self.service._expandir_ues(["019331"])
 
         self.assertEqual(
             resultado,
@@ -529,33 +575,48 @@ class TestExpansaoDeUes(TestCase):
             ],
         )
 
-    def test_codigo_sem_par_na_mv_nao_entra_na_colecao(self) -> None:
-        """Garante que UE fora do recorte nao entra em `ues`."""
-        criar_unidade(codigo="019331")
+    def test_ue_fora_da_rede_nao_entra_na_colecao(self) -> None:
+        """Garante que UE fora da rede nao entra em `ues`, mas fica no id."""
+        criar_perfil(int(TipoAbrangencia.UE), grupo_codigo=12)
+        criar_escopo(ue_codigo="900101")
+        criar_escopo(ue_codigo="900199")
+        self.rede_sme.com_ue("900101")
 
-        resultado = self.service._expandir_ues(["019331", "400196"], _ANO)
+        payload = self.service.abrangencia_compacta(
+            _LOGIN, _PERFIL_GUID, expandir_ues=True
+        )
 
-        self.assertEqual([item["codigo"] for item in resultado], ["019331"])
+        self.assertEqual(payload["idUes"], ["900101", "900199"])
+        self.assertEqual([ue["codigo"] for ue in payload["ues"]], ["900101"])
 
     def test_colecao_sai_ordenada_por_codigo(self) -> None:
         """As UEs saem ordenadas, independentemente da ordem do escopo."""
-        criar_unidade(codigo="094811")
-        criar_unidade(codigo="019331")
+        self.rede_sme.com_ue("094811").com_ue("019331")
 
-        resultado = self.service._expandir_ues(["094811", "019331"], _ANO)
+        resultado = self.service._expandir_ues(["094811", "019331"])
 
         self.assertEqual(
             [item["codigo"] for item in resultado], ["019331", "094811"]
         )
 
+    def test_escopo_vazio_traz_as_ues_da_rede(self) -> None:
+        """Garante que escopo vazio traz a rede, nao uma lista vazia."""
+        self.rede_sme.com_ue("900102").com_ue("900101")
+
+        resultado = self.service._expandir_ues([])
+
+        self.assertEqual(
+            [item["codigo"] for item in resultado], ["900101", "900102"]
+        )
+
     def test_tipo_dre_expande_ues_da_dre_e_nao_do_escopo(self) -> None:
         """Tipo Dre monta `ues[]` a partir da DRE."""
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(codigo="094811", dre_codigo_pai="108100")
-        criar_unidade(codigo="400305", dre_codigo_pai="109000")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_ue("094811", dre="108100")
+        self.rede_sme.com_ue("400305", dre="109000")
 
         resultado = self.service._expandir_ues_da_dre(
-            ["108100"], int(TipoAbrangencia.DRE), _ANO
+            ["108100"], int(TipoAbrangencia.DRE)
         )
 
         self.assertEqual(
@@ -564,11 +625,11 @@ class TestExpansaoDeUes(TestCase):
 
     def test_tipo_sme_expande_a_rede_inteira(self) -> None:
         """Garante que o tipo de abrangencia SME nao filtra `ues[]` por DRE."""
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(codigo="400305", dre_codigo_pai="109000")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_ue("400305", dre="109000")
 
         resultado = self.service._expandir_ues_da_dre(
-            [], int(TipoAbrangencia.SME), _ANO
+            [], int(TipoAbrangencia.SME)
         )
 
         self.assertEqual(
@@ -581,19 +642,15 @@ class TestExpansaoDeDres(TestCase):
     """Testes de `AbrangenciaService._expandir_dres`."""
 
     def setUp(self) -> None:
-        """Instancia o servico e uma DRE na MV de unidade."""
+        """Instancia o servico e uma DRE na rede."""
+        self.rede_sme = usar_rede_sme(self)
+        self.rede_sme.com_dre("108100", nome="DRE Ipiranga", sigla="IP")
         self.service = AbrangenciaService()
-        criar_unidade(
-            tipo_escopo="DRE",
-            codigo="108100",
-            nome="DRE Ipiranga",
-            sigla="IP",
-        )
 
-    def test_traz_nome_e_sigla_da_mv_de_unidade(self) -> None:
+    def test_traz_nome_e_sigla_do_institucional(self) -> None:
         """Garante que `dres[]` sai com `nomeDRE` e `siglaDRE` reais."""
         resultado = self.service._expandir_dres(
-            ["108100"], [], int(TipoAbrangencia.DRE), _ANO
+            ["108100"], [], int(TipoAbrangencia.DRE)
         )
 
         self.assertEqual(
@@ -624,7 +681,7 @@ class TestExpansaoDeDres(TestCase):
         ):
             with self.subTest(tipo_abrangencia=tipo):
                 resultado = self.service._expandir_dres(
-                    [], ues, int(tipo), _ANO
+                    [], ues, int(tipo)
                 )
 
                 self.assertEqual(
@@ -639,13 +696,13 @@ class TestExpansaoDeDres(TestCase):
         ):
             with self.subTest(tipo_abrangencia=tipo):
                 resultado = self.service._expandir_dres(
-                    ["108100"], [], int(tipo), _ANO
+                    ["108100"], [], int(tipo)
                 )
 
                 self.assertEqual(resultado, [])
 
-    def test_dre_derivada_sem_par_na_mv_nao_entra(self) -> None:
-        """DRE pai fora da MV de unidade nao entra na lista."""
+    def test_dre_derivada_fora_do_institucional_nao_entra(self) -> None:
+        """DRE pai que o Institucional nao conhece nao entra na lista."""
         ues = [
             {
                 "codigo": "019331",
@@ -656,7 +713,7 @@ class TestExpansaoDeDres(TestCase):
         ]
 
         resultado = self.service._expandir_dres(
-            [], ues, int(TipoAbrangencia.UE), _ANO
+            [], ues, int(TipoAbrangencia.UE)
         )
 
         self.assertEqual(resultado, [])
@@ -668,23 +725,16 @@ class TestExpansaoDeTurmas(TestCase):
 
     def setUp(self) -> None:
         """Instancia o servico."""
+        self.rede_sme = usar_rede_sme(self)
         self.service = AbrangenciaService()
 
     def test_inclui_somente_turma_elegivel_a_sondagem(self) -> None:
         """Garante que o recorte de sondagem vale so para a lista."""
         criar_perfil(int(TipoAbrangencia.PROFESSOR))
-        criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="TURMA", turma_codigo="1234"
-        )
-        criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="TURMA", turma_codigo="9999"
-        )
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="1234", elegivel_sondagem=True
-        )
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="9999", elegivel_sondagem=False
-        )
+        criar_escopo(tipo_resolucao="DETALHES", turma_codigo="1234")
+        criar_escopo(tipo_resolucao="DETALHES", turma_codigo="9999")
+        self.rede_sme.com_turma("1234", sondagem=True)
+        self.rede_sme.com_turma("9999", sondagem=False)
 
         payload = self.service.abrangencia_compacta(
             _LOGIN,
@@ -699,15 +749,9 @@ class TestExpansaoDeTurmas(TestCase):
             [turma["codigo"] for turma in payload["turmas"]], ["1234"]
         )
 
-    def test_projeta_nome_e_escola_da_mv_de_unidade(self) -> None:
-        """`turmas[]` projeta `nome` e `codigoEscola` da MV de unidade."""
-        criar_unidade(
-            tipo_escopo="TURMA",
-            codigo="1234",
-            nome="1o Ano A",
-            ue_codigo_pai="019331",
-            elegivel_sondagem=True,
-        )
+    def test_projeta_nome_e_escola_da_turma(self) -> None:
+        """`turmas[]` projeta `nome` e `codigoEscola` do MS Pedagogico."""
+        self.rede_sme.com_turma("1234", nome="1o Ano A", ue="019331")
 
         resultado = self.service._expandir_turmas(["1234"], _ANO)
 
@@ -724,23 +768,14 @@ class TestExpansaoDeTurmas(TestCase):
 
     def test_sem_turma_elegivel_sai_lista_vazia(self) -> None:
         """Garante que `turmas` sai `[]`, nao `None`, sem turma elegivel."""
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="1234", elegivel_sondagem=False
-        )
+        self.rede_sme.com_turma("1234", sondagem=False)
 
         self.assertEqual(self.service._expandir_turmas(["1234"], _ANO), [])
 
     def test_escopo_vazio_traz_a_rede_inteira(self) -> None:
         """Garante que escopo vazio traz a rede, nao uma lista vazia."""
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="1234", elegivel_sondagem=True
-        )
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="5678", elegivel_sondagem=True
-        )
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="9999", elegivel_sondagem=False
-        )
+        self.rede_sme.com_turma("1234").com_turma("5678")
+        self.rede_sme.com_turma("9999", sondagem=False)
 
         resultado = self.service._expandir_turmas([], _ANO)
 
@@ -752,6 +787,47 @@ class TestExpansaoDeTurmas(TestCase):
     def test_rede_sem_turma_elegivel_sai_lista_vazia(self) -> None:
         """Rede sem nenhuma turma elegivel devolve `[]`, nao `None`."""
         self.assertEqual(self.service._expandir_turmas([], _ANO), [])
+
+
+@override_settings(ABRANGENCIA_ANO_LETIVO=_ANO)
+class TestUsuariosPorPerfilDaDre(TestCase):
+    """Testes do filtro por DRE de `usuarios_por_perfil`."""
+
+    def setUp(self) -> None:
+        """Lota um usuario em duas UEs, de DREs diferentes."""
+        self.rede_sme = usar_rede_sme(self)
+        self.rede_sme.com_unidade("900101", "900100")
+        self.rede_sme.com_unidade("900102", "900200")
+        for ue in ("900101", "900102"):
+            UsuarioPorPerfil.objects.create(
+                usuario_rf=_LOGIN,
+                perfil_guid=_PERFIL_GUID,
+                ano_letivo=_ANO,
+                ue_codigo=ue,
+            )
+        self.service = AbrangenciaService()
+
+    def test_filtra_dre_pelo_mapa_do_institucional(self) -> None:
+        """Garante o usuario com alguma UE da DRE pedida."""
+        casos = {"900100": 1, "900200": 1, "900300": 0}
+
+        for dre, quantidade in casos.items():
+            with self.subTest(dre=dre):
+                resultado = self.service.usuarios_por_perfil(
+                    "900101", dre, [_PERFIL_GUID]
+                )
+
+                self.assertEqual(len(resultado), quantidade)
+
+    def test_ues_devolvidas_nao_dependem_do_filtro(self) -> None:
+        """Garante as UEs da posse inteira, com ou sem DRE."""
+        resultado = self.service.usuarios_por_perfil(
+            "900101", "900100", [_PERFIL_GUID]
+        )
+
+        self.assertEqual(
+            resultado[0]["perfils"][0]["ues"], ["900101", "900102"]
+        )
 
 
 class TestUsuariosPorPerfilService(TestCase):
@@ -786,7 +862,7 @@ class TestUsuariosPorPerfilService(TestCase):
         )
 
     def test_usuario_com_dois_perfis_vira_uma_entrada(self) -> None:
-        """Um usuario em dois perfis sai uma vez, com duas entradas."""
+        """Um usuario em dois perfis sai uma vez."""
         service = AbrangenciaService()
         outro_perfil = "57a7b9ab-8e61-4093-b692-a0bb1f9f46bd"
         registros = [

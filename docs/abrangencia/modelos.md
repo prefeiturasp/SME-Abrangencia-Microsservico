@@ -9,9 +9,9 @@ Perfil ──────────► PerfilVinculoFuncional
    │
    └─────────────► AbrangenciaResolvida (mv_abrangencia_resolvida)
 
-Unidade (mv_abrangencia_unidade)
-
 UsuarioPorPerfil (mv_abrangencia_usuarios_perfil)
+
+Sistema ─────────► ParametroSistema
 ```
 
 ## Perfil
@@ -51,31 +51,15 @@ Materialized view `mv_abrangencia_resolvida`. Representa uma linha de escopo já
 | `perfil_guid` | UUID | Perfil ao qual o registro pertence. |
 | `ano_letivo` | Integer | Ano letivo do escopo. |
 | `tipo_resolucao` | Text | Algoritmo usado na resolução, como `COMPACTA` ou `DETALHES`. |
-| `tipo_escopo` | Text | Nível do escopo resolvido: DRE, UE ou TURMA. |
-| `dre_codigo` / `ue_codigo` / `turma_codigo` | Text | Código territorial resolvido. |
+| `dre_codigo` / `ue_codigo` / `turma_codigo` | Text | Código EOL. |
 | `origem` | Text | Fonte do dado, usada em regras de projeção do escopo. |
 | `grupo_codigo` / `grupo_nome` | Integer/Text | Grupo do perfil no legado. |
 | `tipo_abrangencia` | Integer | Tipo de abrangência do perfil. |
 | `eh_perfil_manual` / `eh_perfil_misto` | Boolean | Flags agregadas do perfil. |
 
-## Unidade
-
-Materialized view `mv_abrangencia_unidade`. Resolve nome, sigla e hierarquia de DREs, UEs e turmas por ano letivo.
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `ano_letivo` | Integer | Ano letivo da unidade (parte da PK composta). |
-| `tipo_escopo` | Text | Tipo da unidade: DRE, UE ou TURMA (parte da PK composta). |
-| `codigo` | Text | Código da unidade (parte da PK composta). |
-| `nome` | Text | Nome da unidade. |
-| `sigla` | Text | Sigla da unidade. |
-| `dre_codigo_pai` | Text | DRE pai, quando aplicável. |
-| `ue_codigo_pai` | Text | UE pai, quando aplicável. |
-| `elegivel_sondagem` | Boolean | Indica se a turma entra nas consultas de sondagem. |
-
 ## UsuarioPorPerfil
 
-Materialized view `mv_abrangencia_usuarios_perfil`. Base do endpoint `perfis/usuarios`, com usuários vigentes por perfil, UE e DRE.
+Materialized view `mv_abrangencia_usuarios_perfil`. Base do endpoint `perfis/usuarios`, com usuários vigentes por perfil e UE. O filtro por DRE usa a DRE de cada UE no MS Institucional.
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
@@ -83,4 +67,15 @@ Materialized view `mv_abrangencia_usuarios_perfil`. Base do endpoint `perfis/usu
 | `perfil_guid` | UUID | Perfil do usuário (parte da PK composta). |
 | `ano_letivo` | Integer | Ano letivo (parte da PK composta). |
 | `ue_codigo` | Text | Código da UE (parte da PK composta). |
-| `dre_codigo` | Text | Código da DRE (parte da PK composta). |
+
+## Sistema e ParametroSistema
+
+Tabelas `sistema` e `parametro_sistema`. O serviço lê delas só `tipos_escola_exibidos`: a linha ativa do ano corrente de um sistema ativo, ou a global (`sistema_id = 0`) quando o sistema não tem a sua. Ausente ou vazia é erro de configuração.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `sistema_id` | Integer | Sistema dono do parâmetro; `0` é o global. |
+| `nome` | Varchar | Nome do parâmetro. |
+| `valor` | Text | Valor, em lista separada por vírgula nos formatos `array_*`. |
+| `ano_letivo` | Integer | Ano de vigência. |
+| `ativo` | Boolean | Linha em uso. |

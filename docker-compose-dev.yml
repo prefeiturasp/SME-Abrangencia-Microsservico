@@ -24,3 +24,9 @@ services:
       - "${PORT_DEBUGPY:-5680}:${PORT_DEBUGPY:-5680}"
 
     restart: unless-stopped
+
+  keydb:
+    image: eqalpha/keydb:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped

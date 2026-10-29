@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from rest_framework.response import Response
 
 __all__ = [
+    "lista",
     "resposta_detalhe",
     "resposta_erro_status_livre",
     "resposta_externa",
@@ -37,6 +38,20 @@ def sem_conteudo(resposta: httpx.Response) -> bool:
         return False
 
 
+def lista(resposta: httpx.Response) -> list[Any]:
+    """Lê o corpo da API como lista; sem conteúdo vira `[]`.
+
+    Raises:
+        httpx.DecodingError: O corpo não é uma lista JSON.
+    """
+    if sem_conteudo(resposta):
+        return []
+    corpo = resposta.json()
+    if not isinstance(corpo, list):
+        raise httpx.DecodingError("Resposta não é uma lista JSON.")
+    return corpo
+
+
 def resposta_indisponivel(dominio: str, status_code: int = 503) -> Response:
     """Retorna resposta padronizada para API temporariamente indisponível."""
     return resposta_detalhe(f"Serviço de {dominio} indisponível.", status_code)
@@ -49,7 +64,7 @@ def resposta_detalhe(detalhe: str, status_code: int = 400) -> Response:
 
 def resposta_erro_status_livre(exc: httpx.HTTPStatusError) -> Response:
     """Monta resposta de erro preservando status fora do intervalo padrão.
-    
+
     Args:
         exc: Exceção HTTP lançada pelo cliente externo.
 

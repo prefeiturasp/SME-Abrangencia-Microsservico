@@ -140,6 +140,32 @@ APIS_EXTERNAS = {
     "pedagogico": _api_externa("PEDAGOGICO"),
 }
 
+KEYDB_URL = os.getenv("KEYDB_URL", "")
+KEYDB_ENABLED = bool(KEYDB_URL and not _RODANDO_TESTES)
+KEYDB_TIMEOUT = float(os.getenv("KEYDB_TIMEOUT", "2"))
+CACHE_LOCK_TTL = int(os.getenv("CACHE_LOCK_TTL", "120"))
+CACHE_LOCK_WAIT_TIMEOUT = float(os.getenv("CACHE_LOCK_WAIT_TIMEOUT", "90"))
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+    },
+    "keydb": (
+        {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": KEYDB_URL,
+            "KEY_FUNCTION": "apps.core.cache.preservar_chave_cache",
+            "OPTIONS": {
+                "socket_connect_timeout": KEYDB_TIMEOUT,
+                "socket_timeout": KEYDB_TIMEOUT,
+            },
+        }
+        if KEYDB_ENABLED
+        else {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    ),
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [

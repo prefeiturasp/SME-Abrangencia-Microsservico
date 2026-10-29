@@ -1,12 +1,14 @@
 """Testes dos modelos de leitura do domínio Abrangência."""
 
+from django.apps import apps
 from django.test import TestCase
 
 from apps.abrangencia.models import (
     AbrangenciaResolvida,
+    ParametroSistema,
     Perfil,
     PerfilVinculoFuncional,
-    Unidade,
+    Sistema,
     UsuarioPorPerfil,
 )
 
@@ -36,10 +38,15 @@ class TestModelosNaoGerenciados(TestCase):
             AbrangenciaResolvida._meta.db_table, "mv_abrangencia_resolvida"
         )
 
-    def test_unidade_le_a_mv_de_unidade(self) -> None:
-        """`Unidade` lê `mv_abrangencia_unidade`, não a tabela de origem."""
-        self.assertFalse(Unidade._meta.managed)
-        self.assertEqual(Unidade._meta.db_table, "mv_abrangencia_unidade")
+    def test_parametros_sao_somente_leitura(self) -> None:
+        """`Sistema` e `ParametroSistema` leem as tabelas do pipeline."""
+        for model, tabela in (
+            (Sistema, "sistema"),
+            (ParametroSistema, "parametro_sistema"),
+        ):
+            with self.subTest(tabela=tabela):
+                self.assertFalse(model._meta.managed)
+                self.assertEqual(model._meta.db_table, tabela)
 
     def test_usuario_por_perfil_le_a_mv_de_usuarios(self) -> None:
         """`UsuarioPorPerfil` lê a MV."""
@@ -72,18 +79,21 @@ class TestRepresentacaoDosModelos(TestCase):
             login="9999001",
             perfil_guid=_PERFIL_GUID,
             tipo_resolucao="COMPACTA",
-            tipo_escopo="UE",
         )
 
+        self.assertEqual(str(escopo), f"9999001 - {_PERFIL_GUID} - COMPACTA")
+
+    def test_sistema_e_parametro(self) -> None:
+        """Sistema exibe id e nome; parâmetro, sistema, nome e ano."""
+        sistema = Sistema(sistema_id=1000, sistema="Novo SGP")
+        parametro = ParametroSistema(
+            sistema_id=1000, nome="tipos_escola_exibidos", ano_letivo=2026
+        )
+
+        self.assertEqual(str(sistema), "1000 - Novo SGP")
         self.assertEqual(
-            str(escopo), f"9999001 - {_PERFIL_GUID} - COMPACTA/UE"
+            str(parametro), "1000 - tipos_escola_exibidos - 2026"
         )
-
-    def test_unidade(self) -> None:
-        """Unidade exibe ano, tipo e código."""
-        unidade = Unidade(ano_letivo=2026, tipo_escopo="UE", codigo="019331")
-
-        self.assertEqual(str(unidade), "2026 - UE - 019331")
 
     def test_usuario_por_perfil(self) -> None:
         """Usuário por perfil exibe usuário, perfil e UE."""

@@ -8,7 +8,7 @@ Este é um domínio distinto do vínculo funcional de um servidor (cargo, lotaç
 
 ## Papel na arquitetura
 
-O serviço é **somente leitura**: o schema (`perfil`, `perfil_vinculo_funcional` e as materialized views `mv_abrangencia_resolvida`, `mv_abrangencia_unidade` e `mv_abrangencia_usuarios_perfil`) é populado e mantido pelo pipeline `sme-airflow`, com as migrations versionadas por Flyway do lado do pipeline. Este microsserviço nunca escreve nesse banco, nem gera migration para essas tabelas todos os models Django são `managed = False`.
+O schema (`perfil`, `perfil_vinculo_funcional`, `sistema`, `parametro_sistema` e as materialized views `mv_abrangencia_resolvida` e `mv_abrangencia_usuarios_perfil`) é populado e mantido pelo pipeline `sme-airflow`, com as migrations versionadas por Flyway do lado do pipeline.
 
 ```text
 CoreSSO / API EOL legada
@@ -44,8 +44,7 @@ CoreSSO / API EOL legada
 - Consultar o perfil e os cargos/funções que o concedem (`GrupoCargosDTO`).
 - Projetar as linhas de `mv_abrangencia_resolvida` no ramo correto de `TipoAbrangencia` (UE, Professor, DRE, SME etc.), zerando os níveis que aquele ramo não resolve.
 - Suportar os dois algoritmos de resolução de escopo já existentes no legado (padrão e alternativo), que divergem por design em alguns ramos.
-- Expandir DREs, UEs e turmas a partir de `mv_abrangencia_unidade` quando solicitado.
-- Listar usuários lotados em uma UE/DRE para um conjunto de perfis.
+- Listar usuários lotados em uma UE/DRE para um conjunto de perfis; a DRE de cada UE vem do MS Institucional.
 
 ## Limites de responsabilidade
 

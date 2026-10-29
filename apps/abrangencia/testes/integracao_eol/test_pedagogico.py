@@ -173,6 +173,43 @@ class TestPedagogicoAPI(SimpleTestCase):
 
         self.assertEqual(dados, estrutura)
 
+    def test_listar_turmas_envia_os_codigos_no_corpo(self) -> None:
+        """Garante o POST em `listar-turmas/` com `list[int]`."""
+        cliente = MagicMock()
+        turma = {"codigo": 1234, "ano_letivo": 2026, "ue_codigo": "019331"}
+        cliente.post.return_value = _resposta([turma])
+
+        turmas = PedagogicoAPI(cliente).listar_turmas([1234])
+
+        cliente.post.assert_called_once_with(
+            "/turmas/listar-turmas/", payload=[1234]
+        )
+        self.assertEqual(turmas, [turma])
+
+    def test_codigos_turma_da_ue_envia_os_anos_em_query(self) -> None:
+        """Garante a UE no path, os anos na query e códigos em texto."""
+        cliente = MagicMock()
+        cliente.get.return_value = _resposta([1234, 5678])
+
+        codigos = PedagogicoAPI(cliente).codigos_turma_da_ue(
+            "019331", [2010, 2011]
+        )
+
+        cliente.get.assert_called_once_with(
+            "/turmas/ue/019331/sincronizacoes-institucionais/anos-letivos/",
+            params={"anos_letivos_vigente": [2010, 2011]},
+        )
+        self.assertEqual(codigos, ["1234", "5678"])
+
+    def test_codigos_turma_da_ue_sem_conteudo_vira_lista_vazia(self) -> None:
+        """Garante `[]` quando a UE não tem turma nos anos."""
+        cliente = MagicMock()
+        cliente.get.return_value = _resposta(status_code=204)
+
+        codigos = PedagogicoAPI(cliente).codigos_turma_da_ue("019331", [2026])
+
+        self.assertEqual(codigos, [])
+
     def test_sem_cliente_usa_o_configurado_em_apis_externas(self) -> None:
         """Garante que o nome da classe existe em `APIS_EXTERNAS`."""
         cliente = PedagogicoAPI()._cliente

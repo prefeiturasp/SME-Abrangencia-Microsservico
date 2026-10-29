@@ -52,7 +52,6 @@ class AbrangenciaResolvida(ModeloBase):
     perfil_guid = models.UUIDField()
     ano_letivo = models.IntegerField()
     tipo_resolucao = models.TextField()
-    tipo_escopo = models.TextField()
     dre_codigo = models.TextField(null=True, blank=True)
     ue_codigo = models.TextField(null=True, blank=True)
     turma_codigo = models.TextField(null=True, blank=True)
@@ -69,45 +68,19 @@ class AbrangenciaResolvida(ModeloBase):
         verbose_name_plural = "abrangencias resolvidas"
 
     def __str__(self) -> str:
-        return (
-            f"{self.login} - {self.perfil_guid} - "
-            f"{self.tipo_resolucao}/{self.tipo_escopo}"
-        )
-
-
-class Unidade(ModeloBase):
-    """Nome, sigla e vinculo de uma unidade, por ano e tipo de escopo."""
-
-    pk = models.CompositePrimaryKey("ano_letivo", "tipo_escopo", "codigo")
-    ano_letivo = models.IntegerField()
-    tipo_escopo = models.TextField()
-    codigo = models.TextField()
-    nome = models.TextField(null=True, blank=True)
-    sigla = models.TextField(null=True, blank=True)
-    dre_codigo_pai = models.TextField(null=True, blank=True)
-    ue_codigo_pai = models.TextField(null=True, blank=True)
-    elegivel_sondagem = models.BooleanField(default=False)
-
-    class Meta(ModeloBase.Meta):
-        db_table = "mv_abrangencia_unidade"
-        verbose_name = "unidade"
-        verbose_name_plural = "unidades"
-
-    def __str__(self) -> str:
-        return f"{self.ano_letivo} - {self.tipo_escopo} - {self.codigo}"
+        return f"{self.login} - {self.perfil_guid} - {self.tipo_resolucao}"
 
 
 class UsuarioPorPerfil(ModeloBase):
-    """Usuario vigente em um perfil, por ano, UE e DRE."""
+    """Usuario vigente em um perfil, por ano e UE."""
 
     pk = models.CompositePrimaryKey(
-        "usuario_rf", "perfil_guid", "ano_letivo", "ue_codigo", "dre_codigo"
+        "usuario_rf", "perfil_guid", "ano_letivo", "ue_codigo"
     )
     usuario_rf = models.TextField()
     perfil_guid = models.UUIDField()
     ano_letivo = models.IntegerField()
     ue_codigo = models.TextField()
-    dre_codigo = models.TextField()
 
     class Meta(ModeloBase.Meta):
         db_table = "mv_abrangencia_usuarios_perfil"
@@ -116,3 +89,43 @@ class UsuarioPorPerfil(ModeloBase):
 
     def __str__(self) -> str:
         return f"{self.usuario_rf} - {self.perfil_guid} - {self.ue_codigo}"
+
+
+class Sistema(ModeloBase):
+    """Sistema consumidor dos parametros; o de id 0 e o global."""
+
+    sistema_id = models.IntegerField(primary_key=True)
+    sistema = models.CharField(max_length=40)
+    ativo = models.BooleanField(default=True)
+
+    class Meta(ModeloBase.Meta):
+        db_table = "sistema"
+        verbose_name = "sistema"
+        verbose_name_plural = "sistemas"
+
+    def __str__(self) -> str:
+        return f"{self.sistema_id} - {self.sistema}"
+
+
+class ParametroSistema(ModeloBase):
+    """Parametro de um sistema, por nome e ano letivo."""
+
+    parametro_sistema_id = models.BigIntegerField(primary_key=True)
+    sistema_id = models.IntegerField()
+    nome = models.CharField(max_length=80)
+    formato = models.CharField(max_length=20)
+    categoria = models.CharField(max_length=20)
+    descricao = models.CharField(max_length=200)
+    valor = models.TextField()
+    ano_letivo = models.IntegerField()
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(null=True, blank=True)
+    alterado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta(ModeloBase.Meta):
+        db_table = "parametro_sistema"
+        verbose_name = "parametro do sistema"
+        verbose_name_plural = "parametros do sistema"
+
+    def __str__(self) -> str:
+        return f"{self.sistema_id} - {self.nome} - {self.ano_letivo}"

@@ -6,6 +6,7 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import httpx
+from django.core.cache import caches
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import Resolver404, resolve
 from rest_framework import status
@@ -19,16 +20,12 @@ from apps.abrangencia.api.views import (
     CompactaSondagemView,
     CompactaVigenteView,
     DresNomeAbreviacaoView,
-    EstruturaVigentePorDreView,
-    EstruturaVigenteView,
     PerfilView,
 )
 from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
 from apps.abrangencia.models import Perfil, UsuarioPorPerfil
-from apps.abrangencia.testes.helpers import (
-    criar_escopo,
-    criar_unidade,
-)
+from apps.abrangencia.rede_sme import RedeSmeIncompletaError
+from apps.abrangencia.testes.helpers import criar_escopo, usar_rede_sme
 
 _API_KEY = "chave-de-teste"
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
@@ -237,7 +234,7 @@ class TestCompactaVigenteView(TestCase):
 
     def test_payload_traz_as_oito_chaves_do_contrato(self) -> None:
         """Garante as oito chaves do contrato, com as colecoes `null`."""
-        criar_escopo(tipo_escopo="UE", ue_codigo="019331")
+        criar_escopo(ue_codigo="019331")
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -269,10 +266,10 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
             eh_perfil_manual=False,
         )
         criar_escopo(
-            tipo_resolucao="COMPACTA", tipo_escopo="UE", ue_codigo="019331"
+            tipo_resolucao="COMPACTA", ue_codigo="019331"
         )
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="UE", ue_codigo="094811"
+            tipo_resolucao="DETALHES", ue_codigo="094811"
         )
 
     def test_rotas_detalhadas_devolvem_o_escopo_de_detalhes(self) -> None:
@@ -296,14 +293,9 @@ class TestRotasDoAlgoritmoAlternativo(TestCase):
             abrangencia_id=6
         )
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="DRE", dre_codigo="108100"
+            tipo_resolucao="DETALHES", dre_codigo="108100"
         )
-        criar_unidade(
-            tipo_escopo="DRE",
-            codigo="108100",
-            nome="DRE Ipiranga",
-            sigla="IP",
-        )
+        usar_rede_sme(self).com_dre("108100", nome="DRE Ipiranga", sigla="IP")
 
         e08 = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -327,6 +319,7 @@ class TestCompactaSondagemView(TestCase):
 
     def setUp(self) -> None:
         """Prepara client, perfil de Professor e escopo de turma."""
+        self.rede_sme = usar_rede_sme(self)
         self.client = APIClient()
         self.client.credentials(HTTP_X_API_KEY=_API_KEY)
         Perfil.objects.create(
@@ -339,15 +332,9 @@ class TestCompactaSondagemView(TestCase):
     def test_tipo_professor_expande_so_turmas(self) -> None:
         """Tipo Professor expande somente turmas."""
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="TURMA", turma_codigo="1234"
+            tipo_resolucao="DETALHES", turma_codigo="1234"
         )
-        criar_unidade(
-            tipo_escopo="TURMA",
-            codigo="1234",
-            nome="1o Ano A",
-            ue_codigo_pai="019331",
-            elegivel_sondagem=True,
-        )
+        self.rede_sme.com_turma("1234", nome="1o Ano A", ue="019331")
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -366,11 +353,9 @@ class TestCompactaSondagemView(TestCase):
     ) -> None:
         """Garante que o recorte de sondagem vale so para `turmas[]`."""
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="TURMA", turma_codigo="9999"
+            tipo_resolucao="DETALHES", turma_codigo="9999"
         )
-        criar_unidade(
-            tipo_escopo="TURMA", codigo="9999", elegivel_sondagem=False
-        )
+        self.rede_sme.com_turma("9999", sondagem=False)
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -390,6 +375,7 @@ class TestExpansaoNoTipoUe(TestCase):
 
     def setUp(self) -> None:
         """Prepara client e um perfil do tipo de abrangencia UE."""
+        self.rede_sme = usar_rede_sme(self)
         self.client = APIClient()
         self.client.credentials(HTTP_X_API_KEY=_API_KEY)
         Perfil.objects.create(
@@ -402,20 +388,12 @@ class TestExpansaoNoTipoUe(TestCase):
     def test_colecoes_expandidas_trazem_atributos_da_mv(self) -> None:
         """Garante nome, sigla e pai preenchidos, e `dres` vinda das UEs."""
         criar_escopo(
-            tipo_resolucao="DETALHES", tipo_escopo="UE", ue_codigo="019331"
+            tipo_resolucao="DETALHES", ue_codigo="019331"
         )
-        criar_unidade(
-            codigo="019331",
-            nome="EMEF Teste",
-            sigla="EMEF T",
-            dre_codigo_pai="108100",
+        self.rede_sme.com_ue(
+            "019331", nome="EMEF Teste", sigla="EMEF T", dre="108100"
         )
-        criar_unidade(
-            tipo_escopo="DRE",
-            codigo="108100",
-            nome="DRE Ipiranga",
-            sigla="IP",
-        )
+        self.rede_sme.com_dre("108100", nome="DRE Ipiranga", sigla="IP")
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -432,8 +410,8 @@ class TestExpansaoNoTipoUe(TestCase):
 
     def test_escopo_de_ue_vazio_traz_a_rede_inteira(self) -> None:
         """Garante que escopo vazio traz a rede, nao uma lista vazia."""
-        criar_unidade(codigo="019331", dre_codigo_pai="108100")
-        criar_unidade(codigo="094811", dre_codigo_pai="108100")
+        self.rede_sme.com_ue("019331", dre="108100")
+        self.rede_sme.com_ue("094811", dre="108100")
 
         resposta = self.client.get(
             f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}"
@@ -482,7 +460,6 @@ class TestPerfisUsuariosView(TestCase):
             perfil_guid=_PERFIL_GUID,
             ano_letivo=_ANO,
             ue_codigo="019331",
-            dre_codigo="108100",
         )
 
         resposta = self.client.post(
@@ -514,8 +491,8 @@ class TestPerfisUsuariosView(TestCase):
                 perfil_guid=guid,
                 ano_letivo=_ANO,
                 ue_codigo=ue,
-                dre_codigo="108100" if ue else "",
             )
+        usar_rede_sme(self).com_unidade("019715", "108100")
         resposta = self.client.post(
             f"{_BASE}/perfis/usuarios",
             data={"ue": "019715", "dre": "108100", "perfis": [cp]},
@@ -546,7 +523,6 @@ class TestPerfisUsuariosView(TestCase):
             perfil_guid=_PERFIL_GUID,
             ano_letivo=_ANO,
             ue_codigo="019331",
-            dre_codigo="108100",
         )
         corpo = json.dumps({"ue": "019331", "perfis": [_PERFIL_GUID]})
 
@@ -748,8 +724,7 @@ class TestCicloEnsinoView(SimpleTestCase):
     def test_lista_vazio_responde_200_e_nunca_204(
         self, externa: MagicMock
     ) -> None:
-        """Garante 200 com lista vazia (`[]`) caso nenhum registro seja encontrado."""
-        
+        """Garante 200 com `[]` quando nenhum registro e encontrado."""
         for status_externo, conteudo in ((200, b"[]"), (204, b""), (200, b"")):
             externa.return_value = _externa(status_externo, conteudo)
             with self.subTest(status=status_externo, conteudo=conteudo):
@@ -860,7 +835,9 @@ class TestEstruturaVigenteViews(SimpleTestCase):
         por_turmas.return_value = {"dres": []}
 
         respostas = {
-            "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+            "estrutura_vigente_por_dre": self.client.get(
+                f"{_BASE}/estrutura-vigente/000100"
+            ),
             "estrutura_vigente_por_turmas": self._post(["123"]),
         }
 
@@ -936,7 +913,9 @@ class TestEstruturaVigenteViews(SimpleTestCase):
             por_dre.side_effect = falha
             por_turmas.side_effect = falha
             respostas = {
-                "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+                "estrutura_vigente_por_dre": self.client.get(
+                f"{_BASE}/estrutura-vigente/000100"
+            ),
                 "estrutura_vigente_por_turmas": self._post(["123"]),
             }
             for endpoint, resposta in respostas.items():
@@ -958,7 +937,9 @@ class TestEstruturaVigenteViews(SimpleTestCase):
         por_turmas.side_effect = _erro_http(400, b'{"detail": "invalido"}')
 
         respostas = {
-            "estrutura_vigente_por_dre": self.client.get(f"{_BASE}/estrutura-vigente/000100"),
+            "estrutura_vigente_por_dre": self.client.get(
+                f"{_BASE}/estrutura-vigente/000100"
+            ),
             "estrutura_vigente_por_turmas": self._post(["123"]),
         }
 
@@ -1003,3 +984,308 @@ class TestRotasNovasExigemApiKey(SimpleTestCase):
         service.assert_not_called()
         institucional.assert_not_called()
         pedagogico.assert_not_called()
+
+
+_URL_MS = "http://ms.teste/dres/900100/unidades/"
+_INDISPONIVEL_REDE = {"detail": "Serviço de DREs, UEs e turmas indisponível."}
+
+
+def _falhas_do_ms() -> dict[str, Exception]:
+    requisicao = httpx.Request("GET", _URL_MS)
+    return {
+        "fora do ar": httpx.ConnectError("recusada", request=requisicao),
+        "erro do MS": httpx.HTTPStatusError(
+            "erro",
+            request=requisicao,
+            response=httpx.Response(500, request=requisicao),
+        ),
+        "nao encontrado": httpx.HTTPStatusError(
+            "erro",
+            request=requisicao,
+            response=httpx.Response(404, request=requisicao),
+        ),
+        "rede incompleta": RedeSmeIncompletaError("codigos-dres sem DRE"),
+    }
+
+
+@override_settings(
+    API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", ABRANGENCIA_ANO_LETIVO=_ANO
+)
+class TestFalhaDosMsNasRotasDeEscopo(TestCase):
+    """Garante 503, e nunca colecao vazia, quando um MS falha."""
+
+    def setUp(self) -> None:
+        """Prepara client e uma rede que falha em toda consulta."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+        self.rede_sme = usar_rede_sme(self)
+
+    def _falhar(self, erro: Exception) -> None:
+        metodos = (
+            "dres",
+            "codigos_dres",
+            "ues",
+            "unidades_da_dre",
+            "turmas_de_sondagem",
+        )
+        for metodo in metodos:
+            troca = patch.object(self.rede_sme, metodo, side_effect=erro)
+            troca.start()
+            self.addCleanup(troca.stop)
+
+    def test_compactas_respondem_503(self) -> None:
+        """Garante 503 em E-07 a E-10 com o MS fora ou com erro.
+
+        Lista vazia e resposta valida do contrato: o consumidor nao
+        distinguiria a falha.
+        """
+        Perfil.objects.create(
+            perfil_guid=_PERFIL_GUID,
+            grupo_codigo=10,
+            abrangencia_id=6,
+            eh_perfil_manual=False,
+        )
+        rotas = [
+            f"compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}",
+            f"compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/DreDetalhes",
+            f"compacta-vigente/{_LOGIN}/perfil/{_PERFIL_GUID}/Sondagem",
+            f"compacta-semRedis/{_LOGIN}/perfil/{_PERFIL_GUID}",
+        ]
+
+        for caso, erro in _falhas_do_ms().items():
+            self._falhar(erro)
+            for rota in rotas:
+                with self.subTest(caso=caso, rota=rota):
+                    resposta = self.client.get(f"{_BASE}/{rota}")
+
+                    self.assertEqual(
+                        resposta.status_code,
+                        status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
+                    self.assertEqual(resposta.json(), _INDISPONIVEL_REDE)
+
+    def test_usuarios_por_perfil_com_dre_responde_503(self) -> None:
+        """Garante 503 em E-13 quando o filtro de DRE nao chega ao MS."""
+        for caso, erro in _falhas_do_ms().items():
+            self._falhar(erro)
+            with self.subTest(caso=caso):
+                resposta = self.client.post(
+                    f"{_BASE}/perfis/usuarios",
+                    data={
+                        "ue": "900101",
+                        "dre": "900100",
+                        "perfis": [_PERFIL_GUID],
+                    },
+                    format="json",
+                )
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+
+    def test_usuarios_por_perfil_sem_dre_nao_chama_o_ms(self) -> None:
+        """Garante que E-13 sem DRE nao depende do MS."""
+        self._falhar(httpx.ConnectError("recusada"))
+
+        resposta = self.client.post(
+            f"{_BASE}/perfis/usuarios",
+            data={"ue": "900101", "perfis": [_PERFIL_GUID]},
+            format="json",
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+
+_CACHE_LOCAL = {
+    "default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"},
+    "keydb": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "views-teste",
+    },
+}
+_ESTRUTURA_FICTICIA = {
+    "dres": [{"codigo": "900100", "nome": "DRE TESTE", "ues": []}]
+}
+
+
+@override_settings(
+    API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", CACHES=_CACHE_LOCAL
+)
+class TestCacheDosRepasses(SimpleTestCase):
+    """Garante o cache de E-03 e E-04, com o TTL do legado, e E-02 sem."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado e o cache limpo."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+        caches["keydb"].clear()
+        self.addCleanup(caches["keydb"].clear)
+
+    def test_resposta_do_cache_tem_os_bytes_do_ms(self) -> None:
+        """Garante o corpo do MS byte a byte, mesmo saindo do cache.
+
+        O cache guarda a lista JSON; a resposta dele sai compacta e sem
+        escape de acento, como o corpo que o MS entrega.
+        """
+        corpos = {
+            "dres_nome_abreviacao": (
+                "nome-abreviacao-dres",
+                '[{"codigo":"900100","nome":"DIRETORIA REGIONAL DE '
+                'EDUCAÇÃO TESTE","abreviacao":"DRE - TÉ"}]'.encode(),
+            ),
+        }
+
+        for metodo, (rota, corpo) in corpos.items():
+            with (
+                self.subTest(rota=rota),
+                patch.object(InstitucionalAPI, metodo) as externa,
+            ):
+                externa.return_value = _externa(200, corpo)
+
+                do_ms = self.client.get(f"{_BASE}/{rota}")
+                do_cache = self.client.get(f"{_BASE}/{rota}")
+
+                externa.assert_called_once()
+                self.assertEqual(do_ms.content, corpo)
+                self.assertEqual(do_cache.content, corpo)
+                self.assertEqual(do_cache["Content-Type"], "application/json")
+
+    def test_corpo_que_nao_e_lista_nao_entra_no_cache(self) -> None:
+        """Garante que so lista JSON vai para o cache."""
+        with patch.object(
+            InstitucionalAPI, "dres_nome_abreviacao"
+        ) as externa:
+            externa.return_value = _externa(200, b'{"codigo": "1"}')
+
+            self.client.get(f"{_BASE}/nome-abreviacao-dres")
+            self.client.get(f"{_BASE}/nome-abreviacao-dres")
+
+        self.assertEqual(externa.call_count, 2)
+
+    def test_nome_abreviacao_vem_do_cache_na_segunda_chamada(self) -> None:
+        """Garante uma so chamada ao Institucional para E-03."""
+        with patch.object(
+            InstitucionalAPI, "dres_nome_abreviacao"
+        ) as externa:
+            externa.return_value = _externa(200, _CORPO_DRES)
+
+            primeira = self.client.get(f"{_BASE}/nome-abreviacao-dres")
+            segunda = self.client.get(f"{_BASE}/nome-abreviacao-dres")
+
+        externa.assert_called_once()
+        self.assertEqual(segunda.status_code, status.HTTP_200_OK)
+        self.assertEqual(segunda.json(), primeira.json())
+
+    def test_codigos_dres_nao_tem_cache_aqui(self) -> None:
+        """Garante E-02 sempre no Institucional, que ja guarda a lista.
+
+        O MS-Institucional mantem `codigos-dres` no cache dele; uma copia
+        aqui so somaria um segundo prazo de validade.
+        """
+        with patch.object(InstitucionalAPI, "codigos_dres") as externa:
+            externa.return_value = _externa(200, _CORPO_CODIGOS_DRES)
+
+            self.client.get(f"{_BASE}/codigos-dres")
+            resposta = self.client.get(f"{_BASE}/codigos-dres")
+
+        self.assertEqual(externa.call_count, 2)
+        self.assertEqual(resposta.content, _CORPO_CODIGOS_DRES)
+        self.assertIsNone(caches["keydb"].get("abrangencia:codigos-dres"))
+
+    def test_sem_conteudo_ou_erro_nao_entra_no_cache(self) -> None:
+        """Garante que 204, lista vazia e erro voltam ao MS, como no legado."""
+        casos = ((204, b""), (200, b"[]"), (500, b"{}"))
+        for status_externo, conteudo in casos:
+            with (
+                self.subTest(status=status_externo, conteudo=conteudo),
+                patch.object(
+                    InstitucionalAPI, "dres_nome_abreviacao"
+                ) as externa,
+            ):
+                externa.return_value = _externa(status_externo, conteudo)
+
+                self.client.get(f"{_BASE}/nome-abreviacao-dres")
+                self.client.get(f"{_BASE}/nome-abreviacao-dres")
+
+                self.assertEqual(externa.call_count, 2)
+
+    @patch.object(PedagogicoAPI, "estrutura_vigente_por_dre")
+    def test_estrutura_por_dre_vem_do_cache_na_segunda_chamada(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante uma so chamada ao MS-Pedagogico para a mesma DRE."""
+        externa.return_value = _ESTRUTURA_FICTICIA
+
+        primeira = self.client.get(f"{_BASE}/estrutura-vigente/900100")
+        segunda = self.client.get(f"{_BASE}/estrutura-vigente/900100")
+
+        externa.assert_called_once_with("900100")
+        self.assertEqual(segunda.status_code, status.HTTP_200_OK)
+        self.assertEqual(segunda.json(), primeira.json())
+
+    @patch.object(PedagogicoAPI, "estrutura_vigente_por_dre")
+    def test_estrutura_sem_dre_nao_entra_no_cache(
+        self, externa: MagicMock
+    ) -> None:
+        """Garante que o 204 de E-04 nao fica guardado."""
+        externa.return_value = {"dres": []}
+
+        for _ in range(2):
+            resposta = self.client.get(f"{_BASE}/estrutura-vigente/900100")
+            self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.assertEqual(externa.call_count, 2)
+
+
+@override_settings(
+    API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", CACHES=_CACHE_LOCAL
+)
+class TestCacheDoPerfil(TestCase):
+    """Garante o cache de E-01, com o TTL do legado."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado e o cache limpo."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+        caches["keydb"].clear()
+        self.addCleanup(caches["keydb"].clear)
+
+    def test_perfil_vem_do_cache_na_segunda_chamada(self) -> None:
+        """Garante uma so consulta ao banco para o mesmo perfil. """
+        with patch(
+            "apps.abrangencia.api.views.AbrangenciaService.grupo_cargos",
+            autospec=True,
+            side_effect=lambda servico, guid: {"grupoID": guid},
+        ) as consulta:
+            primeira = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
+            segunda = self.client.get(f"{_BASE}/{_PERFIL_GUID.upper()}")
+
+        consulta.assert_called_once()
+        self.assertEqual(segunda.status_code, status.HTTP_200_OK)
+        self.assertEqual(segunda.json(), primeira.json())
+
+    def test_perfil_inexistente_nao_entra_no_cache(self) -> None:
+        """Garante que o 204 volta ao banco na proxima chamada."""
+        with patch(
+            "apps.abrangencia.api.views.AbrangenciaService.grupo_cargos",
+            return_value=None,
+        ) as consulta:
+            for _ in range(2):
+                resposta = self.client.get(f"{_BASE}/{_PERFIL_GUID}")
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_204_NO_CONTENT
+                )
+
+        self.assertEqual(consulta.call_count, 2)
+
+    def test_guid_invalido_nao_consulta_o_cache(self) -> None:
+        """Garante o 400 antes de qualquer leitura de cache ou banco."""
+        with patch(
+            "apps.abrangencia.api.views.PerfilCacheRepository"
+        ) as repositorio:
+            resposta = self.client.get(
+                f"{_BASE}/00000000-0000-0000-0000-000000000000"
+            )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        repositorio.assert_not_called()
