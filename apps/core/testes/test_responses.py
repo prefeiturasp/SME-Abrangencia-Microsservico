@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 from rest_framework import status
 
 from apps.core.api.responses import (
+    lista,
     resposta_detalhe,
     resposta_erro_status_livre,
     resposta_externa,
@@ -131,3 +132,28 @@ class TestSemConteudo(SimpleTestCase):
                 self.assertFalse(
                     sem_conteudo(httpx.Response(200, content=conteudo))
                 )
+
+
+class TestLista(SimpleTestCase):
+    """Testes de `lista`."""
+
+    def test_sem_conteudo_vira_lista_vazia(self) -> None:
+        """Garante `[]` nas mesmas formas de `sem_conteudo`."""
+        casos = [(204, b""), (200, b""), (200, b"[]"), (200, b"{}")]
+        for status_code, conteudo in casos:
+            with self.subTest(status_code=status_code, conteudo=conteudo):
+                resposta = httpx.Response(status_code, content=conteudo)
+                self.assertEqual(lista(resposta), [])
+
+    def test_lista_preenchida_passa_como_veio(self) -> None:
+        """Garante o corpo devolvido sem alteração."""
+        resposta = httpx.Response(200, content=b'["900100", "900200"]')
+
+        self.assertEqual(lista(resposta), ["900100", "900200"])
+
+    def test_corpo_que_nao_e_lista_e_erro(self) -> None:
+        """Garante erro, e não lista vazia, com corpo fora do contrato."""
+        resposta = httpx.Response(200, content=b'{"codigos": []}')
+
+        with self.assertRaises(httpx.DecodingError):
+            lista(resposta)

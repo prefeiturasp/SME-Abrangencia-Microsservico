@@ -1,18 +1,29 @@
 """Views do domínio Abrangência."""
 
+import logging
 import re
+from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
-from django.http import HttpResponse
+import httpx
+from django.http import HttpResponse, JsonResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.abrangencia.cache_repository import (
+    IntegracaoEolCacheRepository,
+    PerfilCacheRepository,
+)
 from apps.abrangencia.constants import GUID_VAZIO
 from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
+from apps.abrangencia.rede_sme import (
+    RedeSmeIncompletaError,
+    estrutura_vigente_por_dre,
+)
 from apps.abrangencia.serializers import (
     AbrangenciaCompactaSerializer,
     BuscarUsuariosPerfisSerializer,
@@ -27,9 +38,12 @@ from apps.abrangencia.services import AbrangenciaService
 from apps.core.api.responses import (
     resposta_detalhe,
     resposta_externa,
+    resposta_indisponivel,
     sem_conteudo,
 )
 from apps.core.api.views import APIExternaView
+
+logger = logging.getLogger(__name__)
 
 _TAG = ["Abrangencia"]
 
@@ -53,7 +67,7 @@ def _perfil_invalido(id_perfil: str) -> bool:
 
 
 class PerfilView(APIView):
-    """Consulta isolada de um perfil, sem depender de um usuário."""
+    """Perfil e seus vínculos."""
 
     @extend_schema(
         tags=_TAG,
@@ -69,13 +83,36 @@ class PerfilView(APIView):
         """Retorna os vínculos funcionais e a abrangência do perfil."""
         if _perfil_invalido(id_perfil):
             return resposta_detalhe("O perfil é obrigatório.")
-        dados = AbrangenciaService().grupo_cargos(id_perfil)
+        cache = PerfilCacheRepository()
+        dados = cache.obter_perfil(id_perfil)
         if dados is None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            dados = AbrangenciaService().grupo_cargos(id_perfil)
+            if dados is None:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            cache.armazenar_perfil(id_perfil, dados)
         return Response(dados)
 
 
-class _CompactaBaseView(APIView):
+class _RedeSmeView(APIExternaView):
+    """Base das views que leem DREs, UEs e turmas."""
+
+    dominio = "DREs, UEs e turmas"
+
+    def handle_exception(self, exc: Exception) -> Response:
+        if isinstance(exc, RedeSmeIncompletaError):
+            logger.error("Rede SME incompleta: %s", exc)
+            return resposta_indisponivel(self.dominio)
+        if isinstance(exc, httpx.HTTPStatusError):
+            logger.warning(
+                "Respondeu %s em %s",
+                exc.response.status_code,
+                exc.request.url,
+            )
+            return resposta_indisponivel(self.dominio)
+        return super().handle_exception(exc)
+
+
+class _CompactaBaseView(_RedeSmeView):
     """Base dos quatro endpoints de escopo compacto."""
 
     expandir_dres = False
@@ -107,6 +144,7 @@ class CompactaVigenteView(_CompactaBaseView):
         responses={
             200: AbrangenciaCompactaSerializer,
             400: DetalheErroSerializer,
+            503: DetalheErroSerializer,
         },
         operation_id="abrangencia_compacta_vigente",
     )
@@ -126,6 +164,7 @@ class CompactaDreDetalhesView(_CompactaBaseView):
         responses={
             200: AbrangenciaCompactaSerializer,
             400: DetalheErroSerializer,
+            503: DetalheErroSerializer,
         },
         operation_id="abrangencia_compacta_dre_detalhes",
     )
@@ -148,6 +187,7 @@ class CompactaSondagemView(_CompactaBaseView):
         responses={
             200: AbrangenciaCompactaSerializer,
             400: DetalheErroSerializer,
+            503: DetalheErroSerializer,
         },
         operation_id="abrangencia_compacta_sondagem",
     )
@@ -167,6 +207,7 @@ class CompactaSemRedisView(_CompactaBaseView):
         responses={
             200: AbrangenciaCompactaSerializer,
             400: DetalheErroSerializer,
+            503: DetalheErroSerializer,
         },
         operation_id="abrangencia_compacta_sem_redis",
     )
@@ -174,7 +215,7 @@ class CompactaSemRedisView(_CompactaBaseView):
         return super().get(request, login, id_perfil)
 
 
-class PerfisUsuariosView(APIView):
+class PerfisUsuariosView(_RedeSmeView):
     """Lista usuários e seus perfis a partir de uma UE e DRE."""
 
     @extend_schema(
@@ -183,6 +224,7 @@ class PerfisUsuariosView(APIView):
         responses={
             200: UsuarioPerfilsAbrangenciaSerializer(many=True),
             400: DetalheErroSerializer,
+            503: DetalheErroSerializer,
         },
         operation_id="abrangencia_perfis_usuarios",
     )
@@ -198,11 +240,35 @@ class PerfisUsuariosView(APIView):
 
 
 _RESPOSTAS_DRES = {204: None, 503: DetalheErroSerializer}
+_JSON_COMPACTO = {"separators": (",", ":"), "ensure_ascii": False}
+
+
+def _repasse_com_cache(
+    chave: str, buscar: Callable[[], httpx.Response]
+) -> HttpResponse:
+    """Repassa o retorno do cache."""
+    cache = IntegracaoEolCacheRepository()
+    guardada = cache.obter_lista(chave)
+    if guardada is not None:
+        return JsonResponse(
+            guardada, safe=False, json_dumps_params=_JSON_COMPACTO
+        )
+    resposta = buscar()
+    if sem_conteudo(resposta):
+        return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+    if resposta.status_code == status.HTTP_200_OK:
+        try:
+            corpo = resposta.json()
+        except ValueError:
+            corpo = None
+        if isinstance(corpo, list):
+            cache.armazenar_lista(chave, corpo)
+    return resposta_externa(resposta)
 
 
 class CodigosDresView(APIExternaView):
     """Lista os códigos da DREs."""
-    
+
     dominio = InstitucionalAPI.nome
 
     @extend_schema(
@@ -214,7 +280,7 @@ class CodigosDresView(APIExternaView):
         operation_id="abrangencia_codigos_dres",
     )
     def get(self, _request: Request) -> HttpResponse:
-        """Retorna os códigos das DREs."""
+        """Retorna os códigos das DREs, do cache do Institucional."""
         resposta = InstitucionalAPI().codigos_dres()
         if sem_conteudo(resposta):
             return HttpResponse(status=status.HTTP_204_NO_CONTENT)
@@ -223,7 +289,7 @@ class CodigosDresView(APIExternaView):
 
 class DresNomeAbreviacaoView(APIExternaView):
     """Lista código, nome e abreviação das DREs."""
-    
+
     dominio = InstitucionalAPI.nome
 
     @extend_schema(
@@ -235,11 +301,11 @@ class DresNomeAbreviacaoView(APIExternaView):
         operation_id="abrangencia_nome_abreviacao_dres",
     )
     def get(self, _request: Request) -> HttpResponse:
-        """Retorna nome e abreviação das DREs."""
-        resposta = InstitucionalAPI().dres_nome_abreviacao()
-        if sem_conteudo(resposta):
-            return HttpResponse(status=status.HTTP_204_NO_CONTENT)
-        return resposta_externa(resposta)
+        """Retorna nome e abreviação das DREs, guardados por 24 horas."""
+        return _repasse_com_cache(
+            IntegracaoEolCacheRepository.CHAVE_NOME_ABREVIACAO_DRES,
+            InstitucionalAPI().dres_nome_abreviacao,
+        )
 
 
 _MSG_CODIGO_DRE_OBRIGATORIO = "O codigo da Dre é obrigatório"
@@ -293,13 +359,13 @@ class EstruturaVigentePorDreView(APIExternaView):
         operation_id="abrangencia_estrutura_vigente_por_dre",
     )
     def get(self, _request: Request, codigo_dre: str) -> Response:
-        """Retorna a árvore DRE -> UE -> turma vigente da DRE."""
+        """Retorna DRE, UE e turma vigente da DRE."""
         codigo_dre = codigo_dre.strip()
         if not codigo_dre:
             return resposta_detalhe(_MSG_CODIGO_DRE_OBRIGATORIO)
         if not _numerico(codigo_dre):
             return Response(status=status.HTTP_204_NO_CONTENT)
-        dados = PedagogicoAPI().estrutura_vigente_por_dre(codigo_dre)
+        dados = estrutura_vigente_por_dre(codigo_dre)
         return _resposta_estrutura(dados)
 
 
@@ -325,7 +391,7 @@ class EstruturaVigenteView(APIExternaView):
 
 class CicloEnsinoView(APIExternaView):
     """Lista os ciclos de ensino."""
-    
+
     dominio = PedagogicoAPI.nome
 
     @extend_schema(

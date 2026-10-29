@@ -8,5 +8,6 @@ O objetivo é fornecer uma visão funcional da aplicação, facilitando o entend
 :maxdepth: 2
 
 modelos
+rede_sme
 api
 ```

@@ -14,3 +14,4 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
+        additional_dependencies: ["types-redis>=4.6,<5"]

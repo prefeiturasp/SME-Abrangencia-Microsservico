@@ -68,7 +68,7 @@ São aceitos os mesmos content-types JSON da API legada:
 
 | Método | Endpoint | Descrição |
 |---------|----------|-----------|
-| POST | `/api/abrangencia/perfis/usuarios` | Lista os usuários lotados em uma UE, para os perfis informados (E-13). |
+| POST | `/api/abrangencia/perfis/usuarios` | Lista os usuários lotados em uma UE, para os perfis informados. |
 
 ### DREs e ciclo de ensino
 

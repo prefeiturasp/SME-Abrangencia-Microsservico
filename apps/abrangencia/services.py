@@ -8,9 +8,6 @@ from django.conf import settings
 from apps.abrangencia.constants import (
     GRUPO_COMUNICADOS_UE,
     ORIGENS_UE_POR_EXERCICIO,
-    TIPO_ESCOPO_DRE,
-    TIPO_ESCOPO_TURMA,
-    TIPO_ESCOPO_UE,
     TIPO_RESOLUCAO_COMPACTA,
     TIPO_RESOLUCAO_DETALHES,
     TipoAbrangencia,
@@ -19,9 +16,9 @@ from apps.abrangencia.models import (
     AbrangenciaResolvida,
     Perfil,
     PerfilVinculoFuncional,
-    Unidade,
     UsuarioPorPerfil,
 )
+from apps.abrangencia.rede_sme import RedeSme, obter_rede_sme
 
 _NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA: dict[int, frozenset[str]] = {
     TipoAbrangencia.PROFESSOR: frozenset({"idDres", "idUes", "idTurmas"}),
@@ -63,12 +60,6 @@ _TIPOS_ABRANGENCIA_QUE_EXPANDEM_DRE = (
 )
 
 
-_ESCOPO_POR_TIPO: dict[str, tuple[str, int]] = {
-    TIPO_ESCOPO_DRE: ("idDres", 0),
-    TIPO_ESCOPO_UE: ("idUes", 1),
-    TIPO_ESCOPO_TURMA: ("idTurmas", 2),
-}
-
 _TIPO_CARGO = "CARGO"
 _TIPO_FUNCAO_ATIVIDADE = "FUNCAO_ATIVIDADE"
 
@@ -90,6 +81,9 @@ def _sem_nulos(codigos: Codigos) -> list[str]:
 class AbrangenciaService:
     """Servico responsavel pelas operacoes do dominio Abrangencia."""
 
+    def __init__(self, rede_sme: RedeSme | None = None) -> None:
+        self._rede_sme = rede_sme or obter_rede_sme()
+
     def grupo_cargos(
         self,
         perfil_guid: str,
@@ -102,7 +96,7 @@ class AbrangenciaService:
         Args:
             perfil_guid: GUID do perfil consultado.
             funcao_exige_cargo: Quando verdadeiro, perfil sem cargo sai
-                sem funcao  ver `_perfil_com_vinculos`.
+                sem funcao; ver `_perfil_com_vinculos`.
             eh_grupo_manual: Informa se o grupo do perfil e manual.
 
         Returns:
@@ -150,6 +144,11 @@ class AbrangenciaService:
         Returns:
             Payload com as oito chaves do contrato, sempre presentes.
             Campo nao expandido sai `None`, nunca `[]`.
+
+        Raises:
+            httpx.HTTPError: Falhou ao trazer o que e da rede.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
         ano = ano_letivo if ano_letivo is not None else self._ano_letivo()
         tipo_resolucao = (
@@ -166,7 +165,7 @@ class AbrangenciaService:
             login, perfil_guid, ano, tipo_resolucao
         )
         if tipo_abrangencia == TipoAbrangencia.SME and not codigos["idDres"]:
-            dres_da_rede: Codigos = list(self._dres_da_rede(ano))
+            dres_da_rede: Codigos = list(self._rede_sme.codigos_dres())
             codigos = {**codigos, "idDres": dres_da_rede}
         if algoritmo_alternativo and tipo_abrangencia == TipoAbrangencia.DRE:
             codigos = self._limitar_dre_unica(codigos)
@@ -205,14 +204,14 @@ class AbrangenciaService:
             expandir_ues
             and tipo_abrangencia in _TIPOS_ABRANGENCIA_QUE_EXPANDEM_UE
         ):
-            ues_expandidas = self._expandir_ues(codigos["idUes"], ano)
+            ues_expandidas = self._expandir_ues(codigos["idUes"])
             payload["ues"] = ues_expandidas
         elif (
             expandir_ues
             and tipo_abrangencia in _TIPOS_ABRANGENCIA_DRE_DE_ID_DRES
         ):
             ues_expandidas = self._expandir_ues_da_dre(
-                _sem_nulos(codigos["idDres"]), tipo_abrangencia, ano
+                _sem_nulos(codigos["idDres"]), tipo_abrangencia
             )
             payload["ues"] = ues_expandidas
         if (
@@ -223,7 +222,6 @@ class AbrangenciaService:
                 _sem_nulos(codigos["idDres"]),
                 ues_expandidas,
                 tipo_abrangencia,
-                ano,
             )
         if (
             expandir_turmas
@@ -249,8 +247,10 @@ class AbrangenciaService:
             perfis: GUIDs dos perfis consultados.
 
         Returns:
-            Um registro por usuario. A chave `perfils` (sem o "i") segue
-            a grafia do contrato consumido pelos sistemas integrados.
+            Um registro por usuario.
+
+        Raises:
+            httpx.HTTPError: Com `dre`, o Institucional falhou.
         """
         usuarios: dict[str, dict[str, Any]] = {}
         for registro in self._usuarios_por_perfil(ue, dre, perfis):
@@ -270,7 +270,7 @@ class AbrangenciaService:
         """Resolve o ano letivo default do ambiente.
 
         Returns:
-            `ABRANGENCIA_ANO_LETIVO`, com fallback para o ano corrente.
+            O valor de `ABRANGENCIA_ANO_LETIVO`, como inteiro.
         """
         return int(settings.ABRANGENCIA_ANO_LETIVO)
 
@@ -407,11 +407,11 @@ class AbrangenciaService:
         Args:
             tipo_abrangencia: Abrangencia do perfil.
             eh_perfil_manual: Flag agregado do perfil.
-            grupo_codigo: Grupo do perfil, que a guarda de 241 cita.
+            grupo_codigo: Grupo do perfil.
 
         Returns:
-            Verdadeiro quando o tipo de abrangencia e o grupo mantem
-            o `null` de 233.
+            Verdadeiro para tipo UE com perfil manual ou do grupo de
+            comunicados da UE.
         """
         if tipo_abrangencia not in (
             TipoAbrangencia.UE,
@@ -458,31 +458,22 @@ class AbrangenciaService:
             perfil_guid=perfil_guid,
             ano_letivo=ano_letivo,
             tipo_resolucao=tipo_resolucao,
-        ).values_list(
-            "tipo_escopo",
-            "dre_codigo",
-            "ue_codigo",
-            "turma_codigo",
-            "origem",
-        )
+        ).values_list("dre_codigo", "ue_codigo", "turma_codigo", "origem")
 
         acumulado: dict[str, set[str | None]] = {
-            chave: set() for chave, _ in _ESCOPO_POR_TIPO.values()
+            "idDres": set(),
+            "idUes": set(),
+            "idTurmas": set(),
         }
-        for tipo_escopo, *valores, origem in linhas:
-            destino = _ESCOPO_POR_TIPO.get(tipo_escopo)
-            if destino is None:
-                continue
-            chave, posicao = destino
-            codigo = valores[posicao]
-            if codigo:
-                acumulado[chave].add(str(codigo))
-            elif (
-                chave == "idUes"
-                and codigo is None
-                and origem in ORIGENS_UE_POR_EXERCICIO
-            ):
-                acumulado[chave].add(None)
+        for dre, ue, turma, origem in linhas:
+            if turma:
+                acumulado["idTurmas"].add(str(turma))
+            elif ue:
+                acumulado["idUes"].add(str(ue))
+            elif dre:
+                acumulado["idDres"].add(str(dre))
+            elif origem in ORIGENS_UE_POR_EXERCICIO:
+                acumulado["idUes"].add(None)
 
         return {
             chave: self._ordenar_codigos(valor)
@@ -503,17 +494,6 @@ class AbrangenciaService:
         if None in codigos:
             ordenados.insert(0, None)
         return ordenados
-
-    def _dres_da_rede(self, ano_letivo: int) -> list[str]:
-        """Lista as DREs da rede para o tipo SME sem linha na MV.
-
-        Args:
-            ano_letivo: Ano letivo do escopo.
-
-        Returns:
-            Codigos das DREs da rede, ordenados.
-        """
-        return sorted(self._unidades(TIPO_ESCOPO_DRE, None, ano_letivo))
 
     def _escopo_veio_de_contrato_externo(
         self,
@@ -542,103 +522,52 @@ class AbrangenciaService:
             ).exists()
         )
 
-    def _unidades(
-        self,
-        tipo_escopo: str,
-        codigos: list[str] | None,
-        ano_letivo: int,
-        *,
-        somente_sondagem: bool = False,
-    ) -> dict[str, Mapping[str, Any]]:
-        """Le nome, sigla e pai das unidades da rede, filtradas ou nao.
-
-        Args:
-            tipo_escopo: `DRE`, `UE` ou `TURMA`.
-            codigos: Codigos a resolver. `None` nao filtra (rede inteira);
-                lista vazia devolve mapa vazio.
-            ano_letivo: Ano letivo do escopo.
-            somente_sondagem: Restringe a unidades elegiveis a sondagem.
-
-        Returns:
-            Mapa `codigo -> atributos`. Codigo sem par na MV simplesmente
-            nao aparece, e e o que faz a expansao se comportar como um
-            LEFT JOIN.
-        """
-        if codigos is not None and not codigos:
-            return {}
-
-        consulta = Unidade.objects.filter(
-            ano_letivo=ano_letivo,
-            tipo_escopo=tipo_escopo,
-        )
-        if codigos is not None:
-            consulta = consulta.filter(codigo__in=codigos)
-        if somente_sondagem:
-            consulta = consulta.filter(elegivel_sondagem=True)
-
-        return {
-            str(linha["codigo"]): linha
-            for linha in consulta.values(
-                "codigo", "nome", "sigla", "dre_codigo_pai", "ue_codigo_pai"
-            )
-        }
-
-    def _expandir_ues(
-        self,
-        id_ues: Codigos,
-        ano_letivo: int,
-    ) -> list[dict]:
+    def _expandir_ues(self, id_ues: Codigos) -> list[dict]:
         """Monta a lista expandida de UEs.
 
         Args:
             id_ues: UEs do escopo; vazio traz a rede inteira.
-            ano_letivo: Ano letivo do escopo.
 
         Returns:
-            Uma entrada por UE com par na MV de unidade, ordenada por
-            codigo.
+            Uma entrada por UE da rede, ordenada por codigo. UE fora da rede
+            fica so no identificador, como num LEFT JOIN.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
-        codigos = _sem_nulos(id_ues)
-        unidades = self._unidades(TIPO_ESCOPO_UE, codigos or None, ano_letivo)
-        return [
-            {
-                "codigo": codigo,
-                "codigoDRE": unidades[codigo]["dre_codigo_pai"],
-                "nome": unidades[codigo]["nome"],
-                "sigla": unidades[codigo]["sigla"],
-            }
-            for codigo in sorted(unidades)
-        ]
+        pedidas = _sem_nulos(id_ues) or sorted(self._rede_sme.ues())
+        ues = self._rede_sme.atributos_ues(pedidas)
+        return [_ue_expandida(codigo, ues[codigo]) for codigo in sorted(ues)]
 
     def _expandir_ues_da_dre(
         self,
         id_dres: list[str],
         tipo_abrangencia: int | None,
-        ano_letivo: int,
     ) -> list[dict]:
         """Monta a lista de UEs dos tipos de abrangencia que resolvem DRE.
 
         Args:
             id_dres: DREs do escopo, usadas como filtro.
             tipo_abrangencia: Abrangencia do perfil.
-            ano_letivo: Ano letivo do escopo.
 
         Returns:
             Uma entrada por UE da rede cujo pai esta em `id_dres`, ou a
             rede inteira no tipo de abrangencia SME.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
-        unidades = self._unidades(TIPO_ESCOPO_UE, None, ano_letivo)
-        dres = set(id_dres or ())
+        ues = self._rede_sme.atributos_ues(sorted(self._rede_sme.ues()))
+        dres = set(id_dres)
         return [
-            {
-                "codigo": codigo,
-                "codigoDRE": unidades[codigo]["dre_codigo_pai"],
-                "nome": unidades[codigo]["nome"],
-                "sigla": unidades[codigo]["sigla"],
-            }
-            for codigo in sorted(unidades)
+            _ue_expandida(codigo, ues[codigo])
+            for codigo in sorted(ues)
             if tipo_abrangencia == TipoAbrangencia.SME
-            or unidades[codigo]["dre_codigo_pai"] in dres
+            or ues[codigo]["dre_codigo"] in dres
         ]
 
     def _expandir_dres(
@@ -646,7 +575,6 @@ class AbrangenciaService:
         id_dres: list[str],
         ues_expandidas: list[dict],
         tipo_abrangencia: int | None,
-        ano_letivo: int,
     ) -> list[dict]:
         """Monta a lista expandida de DREs.
 
@@ -655,11 +583,13 @@ class AbrangenciaService:
             ues_expandidas: UEs ja expandidas, de que a lista deriva
                 nos tipos de abrangencia 1 e 5.
             tipo_abrangencia: Abrangencia do perfil.
-            ano_letivo: Ano letivo do escopo.
 
         Returns:
-            Uma entrada por DRE com par na MV de unidade, ordenada por
+            Uma entrada por DRE encontrada no Institucional, ordenada por
             codigo.
+
+        Raises:
+            httpx.HTTPError: O Institucional falhou.
         """
         if tipo_abrangencia in _TIPOS_ABRANGENCIA_DRE_DERIVADA_DE_UE:
             codigos = sorted(
@@ -668,14 +598,14 @@ class AbrangenciaService:
         else:
             codigos = sorted(set(id_dres))
 
-        unidades = self._unidades(TIPO_ESCOPO_DRE, codigos, ano_letivo)
+        dres = self._rede_sme.atributos_dres(codigos)
         return [
             {
                 "codigoDRE": codigo,
-                "nomeDRE": unidades[codigo]["nome"],
-                "siglaDRE": unidades[codigo]["sigla"],
+                "nomeDRE": dres[codigo]["nome"],
+                "siglaDRE": dres[codigo]["sigla"],
             }
-            for codigo in sorted(unidades)
+            for codigo in sorted(dres)
         ]
 
     def _expandir_turmas(
@@ -686,28 +616,32 @@ class AbrangenciaService:
         """Monta a lista expandida de turmas, restrita a sondagem.
 
         Args:
-            id_turmas: Turmas do escopo; vazio traz a rede inteira.
+            id_turmas: Turmas do escopo; vazio traz as turmas de sondagem
+                da rede.
             ano_letivo: Ano letivo do escopo.
 
         Returns:
             Turmas elegiveis, ordenadas por codigo. Sem nenhuma
             elegivel, a lista vazia.
+
+        Raises:
+            httpx.HTTPError: Um MS falhou.
+            RedeSmeIncompletaError: A rede SME veio incompleta.
+            ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
         """
-        unidades = self._unidades(
-            TIPO_ESCOPO_TURMA,
-            id_turmas or None,
-            ano_letivo,
-            somente_sondagem=True,
+        turmas = (
+            self._rede_sme.turmas(id_turmas, ano_letivo, sondagem=True)
+            if id_turmas
+            else self._rede_sme.turmas_de_sondagem(ano_letivo)
         )
-        turmas = [
+        return [
             {
                 "codigo": codigo,
-                "nome": unidades[codigo]["nome"],
-                "codigoEscola": unidades[codigo]["ue_codigo_pai"],
+                "nome": turmas[codigo]["nome"],
+                "codigoEscola": turmas[codigo]["ue_codigo"],
             }
-            for codigo in sorted(unidades)
+            for codigo in sorted(turmas)
         ]
-        return turmas
 
     def _perfil_com_vinculos(
         self,
@@ -788,8 +722,9 @@ class AbrangenciaService:
             perfil_guid: GUID do perfil consultado.
 
         Returns:
-            `abrangencia_id`  None quando o perfil nao existe,
-            `eh_perfil_manual`, o flag agregado e `grupo_codigo`.
+            `abrangencia_id`, `eh_perfil_manual` (o flag agregado) e
+            `grupo_codigo`; `(None, False, None)` quando o perfil nao
+            existe.
         """
         perfil = (
             Perfil.objects.filter(perfil_guid=perfil_guid)
@@ -810,16 +745,28 @@ class AbrangenciaService:
         dre: str | None,
         perfis: list[str],
     ) -> list[dict]:
-        """Seleciona usuarios pelo filtro e projeta todos os perfis possuidos.
+        """Seleciona usuarios pelo filtro e retorna todos os perfis deles.
+
+        Args:
+            ue: Codigo da UE em que o usuario precisa estar lotado.
+            dre: Codigo da DRE; exige lotacao em alguma UE dela. None
+                nao filtra.
+            perfis: GUIDs dos perfis consultados na UE.
 
         Returns:
             Um registro por par `(login, perfil)`, com as UEs ordenadas.
+
+        Raises:
+            httpx.HTTPError: Com `dre`, o Institucional falhou.
         """
         base = UsuarioPorPerfil.objects.filter(ano_letivo=self._ano_letivo())
         selecao = base.filter(ue_codigo=ue, perfil_guid__in=perfis)
         if dre:
+            ues_da_dre = sorted(self._rede_sme.unidades_da_dre(dre))
             selecao = selecao.filter(
-                usuario_rf__in=base.filter(dre_codigo=dre).values("usuario_rf")
+                usuario_rf__in=base.filter(ue_codigo__in=ues_da_dre).values(
+                    "usuario_rf"
+                )
             )
 
         logins = set(selecao.values_list("usuario_rf", flat=True))
@@ -843,3 +790,21 @@ class AbrangenciaService:
             }
             for (login, perfil_guid), ues in sorted(agrupado.items())
         ]
+
+
+def _ue_expandida(codigo: str, ue: Mapping[str, Any]) -> dict[str, Any]:
+    """Monta a entrada de `ues[]` com as chaves do contrato.
+
+    Args:
+        codigo: Codigo EOL da UE.
+        ue: Atributos da UE vindos da rede SME.
+
+    Returns:
+        `codigo`, `codigoDRE`, `nome` e `sigla`.
+    """
+    return {
+        "codigo": codigo,
+        "codigoDRE": ue["dre_codigo"],
+        "nome": ue["nome"],
+        "sigla": ue["sigla"],
+    }

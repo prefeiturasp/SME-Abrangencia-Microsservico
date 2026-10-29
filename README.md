@@ -17,11 +17,13 @@ Expoe, em contrato compativel com o legado, os perfis, vinculos funcionais e esc
 - `Perfil`
 - `PerfilVinculoFuncional`
 - `AbrangenciaResolvida`
-- `Unidade`
 - `UsuarioPorPerfil`
+- `Sistema` e `ParametroSistema`
 
 Todos sao modelos de leitura (`managed=False`). O schema e as materialized views
-sao mantidos pelo pipeline `sme-airflow`.
+sao mantidos pelo pipeline `sme-airflow`. DREs, UEs e turmas vem do MS
+Institucional e do MS Pedagogico; `python manage.py carregar_rede_sme` monta o
+cache do dia.
 
 ---
 
