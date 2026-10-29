@@ -1,0 +1,11 @@
+services:
+  abrangencia:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+  keydb:
+    image: eqalpha/keydb:alpine
+    restart: unless-stopped

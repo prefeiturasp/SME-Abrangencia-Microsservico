@@ -1,0 +1,32 @@
+services:
+  abrangencia:
+    platform: linux/amd64
+
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        GIT_SSL_NO_VERIFY: "${GIT_SSL_NO_VERIFY:-1}"
+
+    volumes:
+      - .:/app
+      - ../SME-Sidecar-SDK:/sdk
+
+    env_file:
+      - .env
+
+    command: >
+      sh -c "pip install -e /sdk --quiet &&
+             python -Xfrozen_modules=off manage.py runserver 0.0.0.0:${PORT_WEB:-8003}"
+
+    ports:
+      - "${PORT_WEB:-8003}:${PORT_WEB:-8003}"
+      - "${PORT_DEBUGPY:-5680}:${PORT_DEBUGPY:-5680}"
+
+    restart: unless-stopped
+
+  keydb:
+    image: eqalpha/keydb:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
