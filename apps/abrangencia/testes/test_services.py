@@ -10,7 +10,10 @@ from apps.abrangencia.models import (
     Perfil,
     UsuarioPorPerfil,
 )
-from apps.abrangencia.services import AbrangenciaService
+from apps.abrangencia.services import (
+    AbrangenciaService,
+    PerfilInexistenteError,
+)
 from apps.abrangencia.testes.helpers import criar_escopo, usar_rede_sme
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
@@ -354,14 +357,10 @@ class TestAbrangenciaCompacta(TestCase):
 
         self.assertEqual([ue["codigo"] for ue in payload["ues"]], ["019331"])
 
-    def test_perfil_inexistente_mantem_abrangencia_vazio(self) -> None:
-        """Perfil inexistente monta payload sem tipo de abrangencia."""
-        payload = self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
-
-        self.assertIsNone(payload["abrangencia"])
-        self.assertIsNone(payload["idDres"])
-        self.assertIsNone(payload["idUes"])
-        self.assertIsNone(payload["idTurmas"])
+    def test_perfil_inexistente_levanta_erro(self) -> None:
+        """Garante erro, e nao payload nulo, para perfil inexistente."""
+        with self.assertRaises(PerfilInexistenteError):
+            self.service.abrangencia_compacta(_LOGIN, _PERFIL_GUID)
 
     def test_compacta_ue_sem_escopo_devolve_ues_vazia(self) -> None:
         """Garante `idUes: []` e outros niveis `null`."""

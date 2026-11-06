@@ -16,6 +16,21 @@ class TipoAbrangencia(IntEnum):
 
 GUID_VAZIO = "00000000-0000-0000-0000-000000000000"
 
+STATUS_NEGOCIO = 601
+
+MSG_PERFIL_OBRIGATORIO = "O perfil são obrigatórios."
+MSG_LOGIN_PERFIL_OBRIGATORIOS = (
+    "Os parametros de login e perfil são obrigatórios"
+)
+MSG_ABRANGENCIA_NAO_ENCONTRADA = (
+    "Abrangência não encontrada para o perfil informado."
+)
+MSG_COMPORTAMENTO_INESPERADO = (
+    "Houve um comportamento inesperado do sistema. Por favor, contate a SME."
+)
+MSG_CODIGO_DRE_OBRIGATORIO = "O codigo da Dre é obrigatório"
+MSG_TURMA_OBRIGATORIA = "É necessário informar ao menos uma turma"
+
 TIPO_RESOLUCAO_COMPACTA = "COMPACTA"
 TIPO_RESOLUCAO_DETALHES = "DETALHES"
 

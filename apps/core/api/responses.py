@@ -12,6 +12,7 @@ __all__ = [
     "resposta_erro_status_livre",
     "resposta_externa",
     "resposta_indisponivel",
+    "resposta_mensagem",
     "sem_conteudo",
 ]
 
@@ -60,6 +61,13 @@ def resposta_indisponivel(dominio: str, status_code: int = 503) -> Response:
 def resposta_detalhe(detalhe: str, status_code: int = 400) -> Response:
     """Retorna uma resposta padronizada com campo `detail`."""
     return Response({"detail": detalhe}, status=status_code)
+
+
+def resposta_mensagem(mensagem: str, status_code: int = 400) -> Response:
+    """Retorna a mensagem como string JSON."""
+    resposta = Response(mensagem, status=400)
+    resposta.status_code = status_code
+    return resposta
 
 
 def resposta_erro_status_livre(exc: httpx.HTTPStatusError) -> Response:
