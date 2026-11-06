@@ -8,6 +8,7 @@ from uuid import UUID
 
 import httpx
 from django.http import HttpResponse, JsonResponse
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.request import Request
@@ -18,7 +19,16 @@ from apps.abrangencia.cache_repository import (
     IntegracaoEolCacheRepository,
     PerfilCacheRepository,
 )
-from apps.abrangencia.constants import GUID_VAZIO
+from apps.abrangencia.constants import (
+    GUID_VAZIO,
+    MSG_ABRANGENCIA_NAO_ENCONTRADA,
+    MSG_CODIGO_DRE_OBRIGATORIO,
+    MSG_COMPORTAMENTO_INESPERADO,
+    MSG_LOGIN_PERFIL_OBRIGATORIOS,
+    MSG_PERFIL_OBRIGATORIO,
+    MSG_TURMA_OBRIGATORIA,
+    STATUS_NEGOCIO,
+)
 from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
 from apps.abrangencia.rede_sme import (
     RedeSmeIncompletaError,
@@ -34,11 +44,14 @@ from apps.abrangencia.serializers import (
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
 )
-from apps.abrangencia.services import AbrangenciaService
+from apps.abrangencia.services import (
+    AbrangenciaService,
+    PerfilInexistenteError,
+)
 from apps.core.api.responses import (
-    resposta_detalhe,
     resposta_externa,
     resposta_indisponivel,
+    resposta_mensagem,
     sem_conteudo,
 )
 from apps.core.api.views import APIExternaView
@@ -54,6 +67,20 @@ _PARAM_LOGIN = OpenApiParameter(
     "login", str, OpenApiParameter.PATH, description="RF ou CPF do usuário."
 )
 
+_RESPOSTAS_COMPACTA = {
+    200: AbrangenciaCompactaSerializer,
+    400: OpenApiTypes.STR,
+    503: DetalheErroSerializer,
+}
+
+_CODIGO_NUMERICO = re.compile(r"[0-9]+")
+
+_RESPOSTAS_ESTRUTURA = {
+    200: EstruturaVigenteSerializer,
+    204: None,
+    400: OpenApiTypes.STR,
+    503: DetalheErroSerializer,
+}
 
 def _perfil_invalido(id_perfil: str) -> bool:
     """Verifica se o GUID do perfil é vazio ou malformado."""
@@ -75,14 +102,14 @@ class PerfilView(APIView):
         responses={
             200: GrupoCargosSerializer,
             204: None,
-            400: DetalheErroSerializer,
+            400: OpenApiTypes.STR,
         },
         operation_id="abrangencia_perfil",
     )
     def get(self, _request: Request, id_perfil: str) -> Response:
         """Retorna os vínculos funcionais e a abrangência do perfil."""
         if _perfil_invalido(id_perfil):
-            return resposta_detalhe("O perfil é obrigatório.")
+            return resposta_mensagem(MSG_PERFIL_OBRIGATORIO)
         cache = PerfilCacheRepository()
         dados = cache.obter_perfil(id_perfil)
         if dados is None:
@@ -119,33 +146,47 @@ class _CompactaBaseView(_RedeSmeView):
     expandir_ues = False
     expandir_turmas = False
     algoritmo_alternativo = False
+    status_perfil_inexistente: int = status.HTTP_400_BAD_REQUEST
+    mensagem_perfil_inexistente: str = MSG_COMPORTAMENTO_INESPERADO
 
     def get(self, _request: Request, login: str, id_perfil: str) -> Response:
         """Retorna as DREs, UEs e turmas a partir do login e perfil."""
-        if _perfil_invalido(id_perfil):
-            return resposta_detalhe("O perfil é obrigatório.")
-        dados = AbrangenciaService().abrangencia_compacta(
-            login,
-            id_perfil,
-            expandir_dres=self.expandir_dres,
-            expandir_ues=self.expandir_ues,
-            expandir_turmas=self.expandir_turmas,
-            algoritmo_alternativo=self.algoritmo_alternativo,
-        )
+        if not login.strip() or _perfil_invalido(id_perfil):
+            return resposta_mensagem(MSG_LOGIN_PERFIL_OBRIGATORIOS)
+        try:
+            dados = AbrangenciaService().abrangencia_compacta(
+                login,
+                id_perfil,
+                expandir_dres=self.expandir_dres,
+                expandir_ues=self.expandir_ues,
+                expandir_turmas=self.expandir_turmas,
+                algoritmo_alternativo=self.algoritmo_alternativo,
+            )
+        except PerfilInexistenteError:
+            logger.info("Perfil inexistente: %s", id_perfil)
+            return resposta_mensagem(
+                self.mensagem_perfil_inexistente,
+                self.status_perfil_inexistente,
+            )
         return Response(dados)
 
 
 class CompactaVigenteView(_CompactaBaseView):
     """Serve escopo vigente, sem expandir nenhuma lista."""
 
+    status_perfil_inexistente = STATUS_NEGOCIO
+    mensagem_perfil_inexistente = MSG_ABRANGENCIA_NAO_ENCONTRADA
+
     @extend_schema(
         tags=_TAG,
         parameters=[_PARAM_LOGIN, _PARAM_PERFIL],
-        responses={
-            200: AbrangenciaCompactaSerializer,
-            400: DetalheErroSerializer,
-            503: DetalheErroSerializer,
-        },
+        responses=_RESPOSTAS_COMPACTA,
+        description=(
+            f"Perfil inexistente responde {STATUS_NEGOCIO} com a mensagem "
+            f'"{MSG_ABRANGENCIA_NAO_ENCONTRADA}", como no legado. O '
+            "OpenAPI so aceita status de 1XX a 5XX, por isso ele nao "
+            "aparece entre as respostas."
+        ),
         operation_id="abrangencia_compacta_vigente",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
@@ -161,11 +202,7 @@ class CompactaDreDetalhesView(_CompactaBaseView):
     @extend_schema(
         tags=_TAG,
         parameters=[_PARAM_LOGIN, _PARAM_PERFIL],
-        responses={
-            200: AbrangenciaCompactaSerializer,
-            400: DetalheErroSerializer,
-            503: DetalheErroSerializer,
-        },
+        responses=_RESPOSTAS_COMPACTA,
         operation_id="abrangencia_compacta_dre_detalhes",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
@@ -184,11 +221,7 @@ class CompactaSondagemView(_CompactaBaseView):
     @extend_schema(
         tags=_TAG,
         parameters=[_PARAM_LOGIN, _PARAM_PERFIL],
-        responses={
-            200: AbrangenciaCompactaSerializer,
-            400: DetalheErroSerializer,
-            503: DetalheErroSerializer,
-        },
+        responses=_RESPOSTAS_COMPACTA,
         operation_id="abrangencia_compacta_sondagem",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
@@ -204,11 +237,7 @@ class CompactaSemRedisView(_CompactaBaseView):
     @extend_schema(
         tags=_TAG,
         parameters=[_PARAM_LOGIN, _PARAM_PERFIL],
-        responses={
-            200: AbrangenciaCompactaSerializer,
-            400: DetalheErroSerializer,
-            503: DetalheErroSerializer,
-        },
+        responses=_RESPOSTAS_COMPACTA,
         operation_id="abrangencia_compacta_sem_redis",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
@@ -308,18 +337,6 @@ class DresNomeAbreviacaoView(APIExternaView):
         )
 
 
-_MSG_CODIGO_DRE_OBRIGATORIO = "O codigo da Dre é obrigatório"
-_MSG_TURMA_OBRIGATORIA = "É necessário informar ao menos uma turma"
-_CODIGO_NUMERICO = re.compile(r"[0-9]+")
-
-_RESPOSTAS_ESTRUTURA = {
-    200: EstruturaVigenteSerializer,
-    204: None,
-    400: DetalheErroSerializer,
-    503: DetalheErroSerializer,
-}
-
-
 def _numerico(valor: str) -> bool:
     """Verifica se valor contém apenas números."""
     return _CODIGO_NUMERICO.fullmatch(valor) is not None
@@ -362,7 +379,7 @@ class EstruturaVigentePorDreView(APIExternaView):
         """Retorna DRE, UE e turma vigente da DRE."""
         codigo_dre = codigo_dre.strip()
         if not codigo_dre:
-            return resposta_detalhe(_MSG_CODIGO_DRE_OBRIGATORIO)
+            return resposta_mensagem(MSG_CODIGO_DRE_OBRIGATORIO)
         if not _numerico(codigo_dre):
             return Response(status=status.HTTP_204_NO_CONTENT)
         dados = estrutura_vigente_por_dre(codigo_dre)
@@ -384,7 +401,7 @@ class EstruturaVigenteView(APIExternaView):
         """Retorna a árvore DRE -> UE -> turma vigente das turmas."""
         codigos = _codigos_turma(request.data)
         if not codigos:
-            return resposta_detalhe(_MSG_TURMA_OBRIGATORIA)
+            return resposta_mensagem(MSG_TURMA_OBRIGATORIA)
         dados = PedagogicoAPI().estrutura_vigente_por_turmas(codigos)
         return _resposta_estrutura(dados)
 

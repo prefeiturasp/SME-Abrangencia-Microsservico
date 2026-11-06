@@ -10,6 +10,7 @@ from apps.core.api.responses import (
     resposta_erro_status_livre,
     resposta_externa,
     resposta_indisponivel,
+    resposta_mensagem,
     sem_conteudo,
 )
 
@@ -39,6 +40,23 @@ class TestRespostaDetalhe(SimpleTestCase):
         resposta = resposta_detalhe("Não encontrado.", 404)
 
         self.assertEqual(resposta.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class TestRespostaMensagem(SimpleTestCase):
+    """Testes de `resposta_mensagem`."""
+
+    def test_corpo_e_a_mensagem_sem_objeto_e_400_por_padrao(self) -> None:
+        """Garante a string pura, e não `{"detail": ...}`, como no legado."""
+        resposta = resposta_mensagem("Não há valor.")
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(resposta.data, "Não há valor.")
+
+    def test_aceita_status_fora_do_intervalo_http(self) -> None:
+        """Garante 601 sem `ValueError`."""
+        resposta = resposta_mensagem("Regra de negócio.", 601)
+
+        self.assertEqual(resposta.status_code, 601)
 
 
 class TestRespostaIndisponivel(SimpleTestCase):
