@@ -103,3 +103,7 @@ O endpoint `perfis/usuarios` recebe:
 ```
 
 E retorna usuários agrupados por RF, preservando a chave legada `perfils`.
+
+## Respostas de erro
+
+As mensagens que existem no legado saem com o mesmo status, o mesmo texto e o mesmo formato: **string JSON**, sem objeto em volta.

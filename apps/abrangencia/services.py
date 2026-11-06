@@ -66,6 +66,10 @@ _TIPO_FUNCAO_ATIVIDADE = "FUNCAO_ATIVIDADE"
 Codigos = list[str | None]
 
 
+class PerfilInexistenteError(Exception):
+    """O GUID informado nao tem linha em `public.perfil`."""
+
+
 def _sem_nulos(codigos: Codigos) -> list[str]:
     """Descarta o codigo nulo, que so `idUes` carrega.
 
@@ -146,6 +150,7 @@ class AbrangenciaService:
             Campo nao expandido sai `None`, nunca `[]`.
 
         Raises:
+            PerfilInexistenteError: O perfil nao existe; nada mais e lido.
             httpx.HTTPError: Falhou ao trazer o que e da rede.
             RedeSmeIncompletaError: A rede SME veio incompleta.
             ImproperlyConfigured: Sem `tipos_escola_exibidos` no ano.
@@ -723,8 +728,10 @@ class AbrangenciaService:
 
         Returns:
             `abrangencia_id`, `eh_perfil_manual` (o flag agregado) e
-            `grupo_codigo`; `(None, False, None)` quando o perfil nao
-            existe.
+            `grupo_codigo`.
+
+        Raises:
+            PerfilInexistenteError: O perfil nao existe.
         """
         perfil = (
             Perfil.objects.filter(perfil_guid=perfil_guid)
@@ -732,7 +739,7 @@ class AbrangenciaService:
             .first()
         )
         if perfil is None:
-            return None, False, None
+            raise PerfilInexistenteError(perfil_guid)
         return (
             perfil["abrangencia_id"],
             bool(perfil["eh_perfil_manual"]),

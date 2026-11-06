@@ -45,6 +45,40 @@ _CHAVES_COMPACTA = {
     "turmas",
 }
 
+_ROTAS_COMPACTAS = {
+    "compacta_vigente": "compacta-vigente/{login}/perfil/{perfil}",
+    "dre_detalhes": "compacta-vigente/{login}/perfil/{perfil}/DreDetalhes",
+    "sondagem": "compacta-vigente/{login}/perfil/{perfil}/Sondagem",
+    "compacta_sem_redis": "compacta-semRedis/{login}/perfil/{perfil}",
+}
+
+_MSG_DRE = "O codigo da Dre é obrigatório"
+_MSG_TURMA = "É necessário informar ao menos uma turma"
+
+_ESTRUTURA = {
+    "dres": [
+        {
+            "abreviacao": "DRE - TT",
+            "codigo": "000100",
+            "nome": "DIRETORIA TESTE",
+            "ues": [
+                {
+                    "codigo": "000191",
+                    "nome": "EMEF TESTE",
+                    "codTipoEscola": 1,
+                    "turmas": [
+                        {
+                            "anoLetivo": 2026,
+                            "codigo": 9000001,
+                            "dataFim": None,
+                            "ueCodigo": "000191",
+                        }
+                    ],
+                }
+            ],
+        }
+    ]
+}
 
 class TestFidelidadeDasRotas(TestCase):
     """Trava os caminhos das rotas contra o legado."""
@@ -169,13 +203,20 @@ class TestPerfilView(TestCase):
 
         self.assertEqual(resposta.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_guid_vazio_retorna_400(self) -> None:
-        """GUID vazio/malformado e recusado antes de qualquer consulta."""
-        resposta = self.client.get(
-            f"{_BASE}/00000000-0000-0000-0000-000000000000"
-        )
+    def test_guid_vazio_ou_malformado_retorna_400_com_texto_do_legado(
+        self,
+    ) -> None:
+        """Garante o 400 com a mensagem do legado, como string pura."""
+        for guid in ["00000000-0000-0000-0000-000000000000", "nao-e-guid"]:
+            with self.subTest(guid=guid):
+                resposta = self.client.get(f"{_BASE}/{guid}")
 
-        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_400_BAD_REQUEST
+                )
+                self.assertEqual(
+                    resposta.content, '"O perfil são obrigatórios."'.encode()
+                )
 
     def test_perfil_inexistente_retorna_204(self) -> None:
         """Perfil sem registro nao e erro: responde sem corpo."""
@@ -215,14 +256,6 @@ class TestCompactaVigenteView(TestCase):
             eh_perfil_manual=False,
         )
 
-    def test_guid_invalido_retorna_400(self) -> None:
-        """GUID malformado e recusado antes de consultar o escopo."""
-        resposta = self.client.get(
-            f"{_BASE}/compacta-vigente/{_LOGIN}/perfil/nao-e-guid"
-        )
-
-        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
-
     def test_usuario_sem_escopo_retorna_200(self) -> None:
         """Usuario sem linha na MV nao e erro: responde 200."""
         resposta = self.client.get(
@@ -247,6 +280,76 @@ class TestCompactaVigenteView(TestCase):
         self.assertIsNone(corpo["dres"])
         self.assertIsNone(corpo["ues"])
         self.assertIsNone(corpo["turmas"])
+
+
+def _rota_compacta(nome: str, login: str, perfil: str) -> str:
+    rota = _ROTAS_COMPACTAS[nome].format(login=login, perfil=perfil)
+    return f"{_BASE}/{rota}"
+
+
+@override_settings(
+    API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key", ABRANGENCIA_ANO_LETIVO=_ANO
+)
+class TestErrosDasRotasCompactas(TestCase):
+    """Trava status e corpo dos erros das rotas compactas contra o legado."""
+
+    def setUp(self) -> None:
+        """Prepara um client autenticado e a rede SME falsa."""
+        usar_rede_sme(self)
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    def test_compacta_vigente_perfil_inexistente_responde_601(self) -> None:
+        """Garante 601 com a mensagem de negocio, como string."""
+        resposta = self.client.get(
+            _rota_compacta("compacta_vigente", _LOGIN, _PERFIL_GUID)
+        )
+
+        self.assertEqual(resposta.status_code, 601)
+        self.assertEqual(resposta["Content-Type"], "application/json")
+        self.assertEqual(
+            resposta.content,
+            '"Abrangência não encontrada para o perfil informado."'.encode(),
+        )
+
+    def test_demais_rotas_perfil_inexistente_responde_400_generico(
+        self,
+    ) -> None:
+        """Garante o 400 do legado, e nao 200 nem 204."""
+        esperado = (
+            b'"Houve um comportamento inesperado do sistema. '
+            b'Por favor, contate a SME."'
+        )
+        for nome in ["dre_detalhes", "sondagem", "compacta_sem_redis"]:
+            with self.subTest(rota=nome):
+                resposta = self.client.get(
+                    _rota_compacta(nome, _LOGIN, _PERFIL_GUID)
+                )
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_400_BAD_REQUEST
+                )
+                self.assertEqual(resposta.content, esperado)
+
+    def test_login_em_branco_ou_guid_invalido_responde_400(self) -> None:
+        """Garante a mensagem de validacao do legado nas quatro rotas."""
+        esperado = '"Os parametros de login e perfil são obrigatórios"'
+        casos = [
+            ("%20", _PERFIL_GUID),
+            (_LOGIN, "00000000-0000-0000-0000-000000000000"),
+            (_LOGIN, "nao-e-guid"),
+        ]
+        for nome in _ROTAS_COMPACTAS:
+            for login, perfil in casos:
+                with self.subTest(rota=nome, login=login, perfil=perfil):
+                    resposta = self.client.get(
+                        _rota_compacta(nome, login, perfil)
+                    )
+
+                    self.assertEqual(
+                        resposta.status_code, status.HTTP_400_BAD_REQUEST
+                    )
+                    self.assertEqual(resposta.content, esperado.encode())
 
 
 @override_settings(
@@ -727,35 +830,6 @@ class TestCicloEnsinoView(SimpleTestCase):
         self.assertEqual(
             resposta.json(), {"detail": "Serviço de pedagogico indisponível."}
         )
-
-
-_ESTRUTURA = {
-    "dres": [
-        {
-            "abreviacao": "DRE - TT",
-            "codigo": "000100",
-            "nome": "DIRETORIA TESTE",
-            "ues": [
-                {
-                    "codigo": "000191",
-                    "nome": "EMEF TESTE",
-                    "codTipoEscola": 1,
-                    "turmas": [
-                        {
-                            "anoLetivo": 2026,
-                            "codigo": 9000001,
-                            "dataFim": None,
-                            "ueCodigo": "000191",
-                        }
-                    ],
-                }
-            ],
-        }
-    ]
-}
-
-_MSG_DRE = {"detail": "O codigo da Dre é obrigatório"}
-_MSG_TURMA = {"detail": "É necessário informar ao menos uma turma"}
 
 
 def _erro_http(status_code: int, corpo: bytes = b"") -> httpx.HTTPStatusError:
