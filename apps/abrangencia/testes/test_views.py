@@ -23,9 +23,16 @@ from apps.abrangencia.api.views import (
     PerfilView,
 )
 from apps.abrangencia.integracao_eol import InstitucionalAPI, PedagogicoAPI
-from apps.abrangencia.models import Perfil, UsuarioPorPerfil
+from apps.abrangencia.models import (
+    Perfil,
+    UsuarioPorPerfil,
+)
 from apps.abrangencia.rede_sme import RedeSmeIncompletaError
-from apps.abrangencia.testes.helpers import criar_escopo, usar_rede_sme
+from apps.abrangencia.testes.helpers import (
+    criar_dre_vigente,
+    criar_escopo,
+    usar_rede_sme,
+)
 
 _API_KEY = "chave-de-teste"
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
@@ -1028,6 +1035,7 @@ class TestRotasNovasExigemApiKey(SimpleTestCase):
             ("get", "ciclo-ensino"),
             ("get", "estrutura-vigente/000100"),
             ("post", "estrutura-vigente"),
+            ("get", "usuarios/7000001/dre-vigente"),
         ]
 
         for metodo, rota in chamadas:
@@ -1340,3 +1348,38 @@ class TestCacheDoPerfil(TestCase):
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
         repositorio.assert_not_called()
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+class TestDreVigenteView(TestCase):
+    """Testes de `GET /usuarios/{login}/dre-vigente` (E-20)."""
+
+    def setUp(self) -> None:
+        """Autentica o cliente."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    def _consultar(self, login: str) -> Any:
+        return self.client.get(f"{_BASE}/usuarios/{login}/dre-vigente")
+
+    def test_ca01_login_com_dre_responde_200(self) -> None:
+        """Responde 200 com `login` e `dreCodigo`, e so essas chaves."""
+        criar_dre_vigente()
+
+        resposta = self._consultar("7000001")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resposta.json(), {"login": "7000001", "dreCodigo": "100000"}
+        )
+
+    def test_sem_dre_responde_204_sem_corpo_nunca_400(self) -> None:
+        """Garante 204 vazio, e nunca 400, para login sem DRE vigente."""
+        for login in ("7000001", "abc", "12345678900"):
+            with self.subTest(login=login):
+                resposta = self._consultar(login)
+
+                self.assertEqual(
+                    resposta.status_code, status.HTTP_204_NO_CONTENT
+                )
+                self.assertEqual(resposta.content, b"")

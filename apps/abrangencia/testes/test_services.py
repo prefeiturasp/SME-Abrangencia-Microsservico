@@ -14,7 +14,11 @@ from apps.abrangencia.services import (
     AbrangenciaService,
     PerfilInexistenteError,
 )
-from apps.abrangencia.testes.helpers import criar_escopo, usar_rede_sme
+from apps.abrangencia.testes.helpers import (
+    criar_dre_vigente,
+    criar_escopo,
+    usar_rede_sme,
+)
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
 _LOGIN = "9999001"
@@ -881,3 +885,53 @@ class TestUsuariosPorPerfilService(TestCase):
 
         self.assertEqual(len(resultado), 1)
         self.assertEqual(len(resultado[0]["perfils"]), 2)
+
+
+class TestDreVigente(TestCase):
+    """Testes de `AbrangenciaService.dre_vigente`."""
+
+    def setUp(self) -> None:
+        """Instancia o servico."""
+        self.service = AbrangenciaService()
+
+    def test_linha_encontrada_devolve_login_recebido_e_dre(self) -> None:
+        """Devolve `login` e `dreCodigo`."""
+        criar_dre_vigente()
+
+        with self.assertNumQueries(1):
+            resultado = self.service.dre_vigente("7000001")
+
+        self.assertEqual(
+            resultado, {"login": "7000001", "dreCodigo": "100000"}
+        )
+
+    def test_sem_dre_vigente_devolve_none(self) -> None:
+        """Garante None sem linha da origem ou com `dre_codigo` nulo."""
+        criar_dre_vigente("7000001", origem="LOTACAO_CARGO")
+        criar_dre_vigente("7000002", dre=None)
+        criar_dre_vigente("7000003")
+
+        for login in ("7000009", "7000001", "7000002", " 7000003"):
+            with self.subTest(login=login):
+                self.assertIsNone(self.service.dre_vigente(login))
+
+    def test_espaco_a_direita_e_ignorado(self) -> None:
+        """Garante que o RF sem os espacos."""
+        criar_dre_vigente()
+
+        resultado = self.service.dre_vigente("7000001 ")
+
+        self.assertEqual(
+            resultado, {"login": "7000001 ", "dreCodigo": "100000"}
+        )
+
+    def test_dois_anos_devolve_o_maior(self) -> None:
+        """Sem filtro de ano, retorna o maior."""
+        criar_dre_vigente(ano=2025, dre="100000")
+        criar_dre_vigente(ano=2026, dre="200000")
+
+        resultado = self.service.dre_vigente("7000001")
+
+        self.assertEqual(
+            resultado, {"login": "7000001", "dreCodigo": "200000"}
+        )

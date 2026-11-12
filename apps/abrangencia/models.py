@@ -2,6 +2,7 @@
 
 from django.db import models
 
+from apps.abrangencia.constants import ORIGEM_DRE_VIGENTE
 from apps.core.models import ModeloBase
 
 
@@ -89,6 +90,34 @@ class UsuarioPorPerfil(ModeloBase):
 
     def __str__(self) -> str:
         return f"{self.usuario_rf} - {self.perfil_guid} - {self.ue_codigo}"
+
+
+class DreVigenteManager(models.Manager["DreVigenteUsuario"]):
+    """Restringe a leitura de `usuario_abrangencia` a uma origem."""
+
+    def get_queryset(self) -> models.QuerySet["DreVigenteUsuario"]:
+        """Devolve so as linhas da origem da DRE vigente."""
+        return super().get_queryset().filter(origem=ORIGEM_DRE_VIGENTE)
+
+
+class DreVigenteUsuario(ModeloBase):
+    """DRE da lotacao ativa de um servidor."""
+
+    usuario_abrangencia_id = models.BigIntegerField(primary_key=True)
+    login = models.TextField()
+    ano_letivo = models.IntegerField()
+    dre_codigo = models.TextField(null=True, blank=True)
+    origem = models.TextField()
+
+    objects = DreVigenteManager()
+
+    class Meta(ModeloBase.Meta):
+        db_table = "usuario_abrangencia"
+        verbose_name = "dre vigente do usuario"
+        verbose_name_plural = "dres vigentes dos usuarios"
+
+    def __str__(self) -> str:
+        return f"{self.login} - {self.dre_codigo}"
 
 
 class Sistema(ModeloBase):

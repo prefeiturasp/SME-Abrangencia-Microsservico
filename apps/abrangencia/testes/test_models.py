@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from apps.abrangencia.models import (
     AbrangenciaResolvida,
+    DreVigenteUsuario,
     ParametroSistema,
     Perfil,
     PerfilVinculoFuncional,
@@ -55,6 +56,13 @@ class TestModelosNaoGerenciados(TestCase):
             UsuarioPorPerfil._meta.db_table, "mv_abrangencia_usuarios_perfil"
         )
 
+    def test_dre_vigente_usuario_le_a_tabela_de_escopo(self) -> None:
+        """`DreVigenteUsuario` lê `usuario_abrangencia`."""
+        self.assertFalse(DreVigenteUsuario._meta.managed)
+        self.assertEqual(
+            DreVigenteUsuario._meta.db_table, "usuario_abrangencia"
+        )
+
 
 class TestRepresentacaoDosModelos(TestCase):
     """Testes de `__str__` dos models."""
@@ -94,6 +102,12 @@ class TestRepresentacaoDosModelos(TestCase):
         self.assertEqual(
             str(parametro), "1000 - tipos_escola_exibidos - 2026"
         )
+
+    def test_dre_vigente_usuario(self) -> None:
+        """DRE vigente exibe login e DRE."""
+        linha = DreVigenteUsuario(login="7000001", dre_codigo="100000")
+
+        self.assertEqual(str(linha), "7000001 - 100000")
 
     def test_usuario_por_perfil(self) -> None:
         """Usuário por perfil exibe usuário, perfil e UE."""
