@@ -172,3 +172,10 @@ class DetalheErroSerializer(serializers.Serializer):
     """Corpo de erro genérico, usado nas respostas 400 e 503 do domínio."""
 
     detail = serializers.CharField()
+
+
+class DreVigenteUsuarioSerializer(serializers.Serializer):
+    """Representa a DRE vigente de um login."""
+
+    login = serializers.CharField()
+    dreCodigo = serializers.CharField()  # noqa: N815

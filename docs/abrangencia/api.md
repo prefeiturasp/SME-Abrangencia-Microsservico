@@ -64,6 +64,12 @@ São aceitos os mesmos content-types JSON da API legada:
 | GET | `/api/abrangencia/compacta-vigente/{login}/perfil/{id_perfil}/Sondagem` | Escopo alternativo com DREs, UEs e turmas expandidas quando aplicável. |
 | GET | `/api/abrangencia/compacta-semRedis/{login}/perfil/{id_perfil}` | Escopo pelo algoritmo alternativo, sem expandir DREs, UEs ou turmas. |
 
+### Usuário
+
+| Método | Endpoint | Descrição |
+|---------|----------|-----------|
+| GET | `/api/abrangencia/usuarios/{login}/dre-vigente` | Retorna o código da DRE vigente do servidor. |
+
 ### Usuários por perfil
 
 | Método | Endpoint | Descrição |

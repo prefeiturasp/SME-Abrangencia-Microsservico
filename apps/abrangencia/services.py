@@ -14,6 +14,7 @@ from apps.abrangencia.constants import (
 )
 from apps.abrangencia.models import (
     AbrangenciaResolvida,
+    DreVigenteUsuario,
     Perfil,
     PerfilVinculoFuncional,
     UsuarioPorPerfil,
@@ -121,6 +122,25 @@ class AbrangenciaService:
                 perfil, eh_grupo_manual=eh_grupo_manual
             ),
         }
+
+    def dre_vigente(self, login: str) -> dict[str, str] | None:
+        """Devolve a DRE da lotacao ativa do servidor.
+
+        Args:
+            login: RF do servidor, como recebido na rota.
+
+        Returns:
+            `login` e `dreCodigo`, ou None sem linha ou sem DRE.
+        """
+        dre = (
+            DreVigenteUsuario.objects.filter(login=login.rstrip(" "))
+            .order_by("-ano_letivo")
+            .values_list("dre_codigo", flat=True)
+            .first()
+        )
+        if dre is None:
+            return None
+        return {"login": login, "dreCodigo": dre}
 
     def abrangencia_compacta(
         self,

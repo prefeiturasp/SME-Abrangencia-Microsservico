@@ -5,8 +5,11 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import patch
 
-from apps.abrangencia.constants import TIPO_RESOLUCAO_COMPACTA
-from apps.abrangencia.models import AbrangenciaResolvida
+from apps.abrangencia.constants import (
+    ORIGEM_DRE_VIGENTE,
+    TIPO_RESOLUCAO_COMPACTA,
+)
+from apps.abrangencia.models import AbrangenciaResolvida, DreVigenteUsuario
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
 _LOGIN = "9999001"
@@ -33,6 +36,27 @@ def criar_escopo(**overrides: object) -> None:
     }
     base.update(overrides)
     AbrangenciaResolvida.objects.create(**base)
+
+
+def criar_dre_vigente(
+    login: str = "7000001",
+    *,
+    ano: int = _ANO,
+    dre: str | None = "100000",
+    origem: str = ORIGEM_DRE_VIGENTE,
+) -> None:
+    """Cria uma linha para os testes da DRE vigente."""
+    ultima = DreVigenteUsuario._base_manager.order_by(
+        "-usuario_abrangencia_id"
+    ).first()
+    proximo_id = 1 if ultima is None else ultima.usuario_abrangencia_id + 1
+    DreVigenteUsuario.objects.create(
+        usuario_abrangencia_id=proximo_id,
+        login=login,
+        ano_letivo=ano,
+        dre_codigo=dre,
+        origem=origem,
+    )
 
 
 class RedeSmeFalsa:
