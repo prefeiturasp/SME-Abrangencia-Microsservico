@@ -11,6 +11,8 @@ Perfil ──────────► PerfilVinculoFuncional
 
 UsuarioPorPerfil (mv_abrangencia_usuarios_perfil)
 
+DreVigenteUsuario (usuario_abrangencia, origem LOTACAO_DRE_VIGENTE)
+
 Sistema ─────────► ParametroSistema
 ```
 
@@ -67,6 +69,18 @@ Materialized view `mv_abrangencia_usuarios_perfil`. Base do endpoint `perfis/usu
 | `perfil_guid` | UUID | Perfil do usuário (parte da PK composta). |
 | `ano_letivo` | Integer | Ano letivo (parte da PK composta). |
 | `ue_codigo` | Text | Código da UE (parte da PK composta). |
+
+## DreVigenteUsuario
+
+Tabela `usuario_abrangencia`, só a origem `LOTACAO_DRE_VIGENTE`: Base do endpoint `usuarios/{login}/dre-vigente`. A origem não tem perfil e não passa pelas MVs.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `usuario_abrangencia_id` | BigInteger | PK |
+| `login` | Text | RF do servidor. |
+| `ano_letivo` | Integer | Ano letivo. |
+| `dre_codigo` | Text | Código EOL da DRE vigente. |
+| `origem` | Text | `LOTACAO_DRE_VIGENTE`. |
 
 ## Sistema e ParametroSistema
 

@@ -40,6 +40,7 @@ from apps.abrangencia.serializers import (
     CicloEnsinoSerializer,
     DetalheErroSerializer,
     DreNomeAbreviacaoSerializer,
+    DreVigenteUsuarioSerializer,
     EstruturaVigenteSerializer,
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
@@ -64,7 +65,7 @@ _PARAM_PERFIL = OpenApiParameter(
     "id_perfil", str, OpenApiParameter.PATH, description="GUID do perfil."
 )
 _PARAM_LOGIN = OpenApiParameter(
-    "login", str, OpenApiParameter.PATH, description="RF ou CPF do usuário."
+    "login", str, OpenApiParameter.PATH, description="RF do usuário."
 )
 
 _RESPOSTAS_COMPACTA = {
@@ -120,6 +121,27 @@ class PerfilView(APIView):
         return Response(dados)
 
 
+class DreVigenteView(APIView):
+    """DRE da lotação ativa do RF do servidor."""
+
+    @extend_schema(
+        tags=_TAG,
+        parameters=[_PARAM_LOGIN],
+        responses={
+            200: DreVigenteUsuarioSerializer,
+            204: None,
+            401: DetalheErroSerializer,
+        },
+        operation_id="abrangencia_dre_vigente",
+    )
+    def get(self, _request: Request, login: str) -> Response:
+        """Retorna a DRE da lotação ativa do RF, ou 204 sem corpo."""
+        dados = AbrangenciaService().dre_vigente(login)
+        if dados is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(dados)
+
+
 class _RedeSmeView(APIExternaView):
     """Base das views que leem DREs, UEs e turmas."""
 
@@ -150,7 +172,7 @@ class _CompactaBaseView(_RedeSmeView):
     mensagem_perfil_inexistente: str = MSG_COMPORTAMENTO_INESPERADO
 
     def get(self, _request: Request, login: str, id_perfil: str) -> Response:
-        """Retorna as DREs, UEs e turmas a partir do login e perfil."""
+        """Retorna as DREs, UEs e turmas a partir do login e perfil sem cache."""
         if not login.strip() or _perfil_invalido(id_perfil):
             return resposta_mensagem(MSG_LOGIN_PERFIL_OBRIGATORIOS)
         try:
@@ -181,15 +203,10 @@ class CompactaVigenteView(_CompactaBaseView):
         tags=_TAG,
         parameters=[_PARAM_LOGIN, _PARAM_PERFIL],
         responses=_RESPOSTAS_COMPACTA,
-        description=(
-            f"Perfil inexistente responde {STATUS_NEGOCIO} com a mensagem "
-            f'"{MSG_ABRANGENCIA_NAO_ENCONTRADA}", como no legado. O '
-            "OpenAPI so aceita status de 1XX a 5XX, por isso ele nao "
-            "aparece entre as respostas."
-        ),
         operation_id="abrangencia_compacta_vigente",
     )
     def get(self, request: Request, login: str, id_perfil: str) -> Response:
+        """Retorna as DREs, UEs e turmas a partir do login e perfil."""
         return super().get(request, login, id_perfil)
 
 

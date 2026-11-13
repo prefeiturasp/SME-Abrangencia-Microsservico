@@ -10,6 +10,7 @@ from apps.abrangencia.api.views import (
     CompactaSondagemView,
     CompactaVigenteView,
     DresNomeAbreviacaoView,
+    DreVigenteView,
     EstruturaVigentePorDreView,
     EstruturaVigenteView,
     PerfilView,
@@ -58,6 +59,11 @@ urlpatterns = [
         "compacta-semRedis/<str:login>/perfil/<str:id_perfil>",
         CompactaSemRedisView.as_view(),
         name="compacta-sem-redis",
+    ),
+    path(
+        "usuarios/<str:login>/dre-vigente",
+        DreVigenteView.as_view(),
+        name="dre-vigente",
     ),
     path("<str:id_perfil>", PerfilView.as_view(), name="perfil"),
 ]

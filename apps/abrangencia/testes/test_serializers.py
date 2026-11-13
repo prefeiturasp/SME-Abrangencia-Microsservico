@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 from apps.abrangencia.serializers import (
     AbrangenciaCompactaSerializer,
     BuscarUsuariosPerfisSerializer,
+    DreVigenteUsuarioSerializer,
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
 )
@@ -118,3 +119,13 @@ class TestUsuarioPerfilsAbrangenciaSerializer(SimpleTestCase):
 
         self.assertIn("perfils", serializer.data)
         self.assertNotIn("perfis", serializer.data)
+
+
+class TestDreVigenteUsuarioSerializer(SimpleTestCase):
+    """Testes de `DreVigenteUsuarioSerializer`."""
+
+    def test_campos_exatos(self) -> None:
+        """Exibe só `login` e `dreCodigo`."""
+        serializer = DreVigenteUsuarioSerializer()
+
+        self.assertEqual(set(serializer.fields), {"login", "dreCodigo"})
