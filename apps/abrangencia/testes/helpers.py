@@ -6,10 +6,10 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from apps.abrangencia.constants import (
-    ORIGEM_DRE_VIGENTE,
+    ORIGEM_CARGO_BASE,
     TIPO_RESOLUCAO_COMPACTA,
 )
-from apps.abrangencia.models import AbrangenciaResolvida, DreVigenteUsuario
+from apps.abrangencia.models import AbrangenciaResolvida, VinculoFuncional
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
 _LOGIN = "9999001"
@@ -38,24 +38,33 @@ def criar_escopo(**overrides: object) -> None:
     AbrangenciaResolvida.objects.create(**base)
 
 
-def criar_dre_vigente(
+def criar_vinculo(
     login: str = "7000001",
     *,
-    ano: int = _ANO,
+    origem: str = ORIGEM_CARGO_BASE,
+    cargo_base: int = 1,
+    lotacao: int | None = 1,
+    cargo: int = 1001,
+    nome: str = "CARGO FICTICIO",
     dre: str | None = "100000",
-    origem: str = ORIGEM_DRE_VIGENTE,
+    dre_nome: str | None = "DRE FICTICIA",
+    ue: str | None = "000001",
+    ue_nome: str | None = "EMEF - ESCOLA FICTICIA",
 ) -> None:
-    """Cria uma linha para os testes da DRE vigente."""
-    ultima = DreVigenteUsuario._base_manager.order_by(
-        "-usuario_abrangencia_id"
-    ).first()
-    proximo_id = 1 if ultima is None else ultima.usuario_abrangencia_id + 1
-    DreVigenteUsuario.objects.create(
-        usuario_abrangencia_id=proximo_id,
+    """Cria uma linha de `usuario_vinculo_funcional`."""
+    VinculoFuncional.objects.create(
+        ano_letivo=_ANO,
         login=login,
-        ano_letivo=ano,
-        dre_codigo=dre,
         origem=origem,
+        cargo_base_servidor=cargo_base,
+        lotacao_servidor=lotacao,
+        cargo_codigo=cargo,
+        cargo_nome=nome,
+        dre_codigo=dre,
+        dre_nome=dre_nome,
+        ue_codigo=ue,
+        ue_tipo=1,
+        ue_nome=ue_nome,
     )
 
 

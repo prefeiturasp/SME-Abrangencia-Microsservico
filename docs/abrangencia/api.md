@@ -69,6 +69,12 @@ São aceitos os mesmos content-types JSON da API legada:
 | Método | Endpoint | Descrição |
 |---------|----------|-----------|
 | GET | `/api/abrangencia/usuarios/{login}/dre-vigente` | Retorna o código da DRE vigente do servidor. |
+| GET | `/api/abrangencia/usuarios/{codigo_rf}/dados-funcionais-autenticacao-externa` | Retorna cargos, cargos sobrepostos, unidades de lotação e unidade de exercício do servidor. |
+
+`dados-funcionais-autenticacao-externa` devolve os campos `cargos`,
+`cargosSobrePosto`, `unidadesLotacao` e `unidadeExercicio` vigentes do servidor.
+RF sem vínculo responde 200 com os quatro `null`, como o legado.
+
 
 ### Usuários por perfil
 

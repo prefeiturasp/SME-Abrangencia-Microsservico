@@ -174,6 +174,35 @@ class DetalheErroSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
+class CargoServidorSerializer(serializers.Serializer):
+    """Representa um cargo do servidor."""
+
+    codigo = serializers.IntegerField()
+    nome = serializers.CharField()
+
+
+class UnidadeServidorSerializer(serializers.Serializer):
+    """Representa uma unidade de lotacao ou de exercicio."""
+
+    codigo = serializers.CharField()
+    nomeUnidade = serializers.CharField()  # noqa: N815
+
+
+class DadosFuncionaisSerializer(serializers.Serializer):
+    """Representa cargos e unidades do servidor."""
+
+    cargos = CargoServidorSerializer(many=True, allow_null=True)
+    cargosSobrePosto = CargoServidorSerializer(  # noqa: N815
+        many=True, allow_null=True
+    )
+    unidadesLotacao = UnidadeServidorSerializer(  # noqa: N815
+        many=True, allow_null=True
+    )
+    unidadeExercicio = UnidadeServidorSerializer(  # noqa: N815
+        allow_null=True
+    )
+
+
 class DreVigenteUsuarioSerializer(serializers.Serializer):
     """Representa a DRE vigente de um login."""
 

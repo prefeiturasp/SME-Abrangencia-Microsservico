@@ -9,6 +9,7 @@ from apps.abrangencia.api.views import (
     CompactaSemRedisView,
     CompactaSondagemView,
     CompactaVigenteView,
+    DadosFuncionaisView,
     DresNomeAbreviacaoView,
     DreVigenteView,
     EstruturaVigentePorDreView,
@@ -64,6 +65,11 @@ urlpatterns = [
         "usuarios/<str:login>/dre-vigente",
         DreVigenteView.as_view(),
         name="dre-vigente",
+    ),
+    path(
+        "usuarios/<str:codigo_rf>/dados-funcionais-autenticacao-externa",
+        DadosFuncionaisView.as_view(),
+        name="dados-funcionais-autenticacao-externa",
     ),
     path("<str:id_perfil>", PerfilView.as_view(), name="perfil"),
 ]
