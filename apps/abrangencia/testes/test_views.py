@@ -29,8 +29,8 @@ from apps.abrangencia.models import (
 )
 from apps.abrangencia.rede_sme import RedeSmeIncompletaError
 from apps.abrangencia.testes.helpers import (
-    criar_dre_vigente,
     criar_escopo,
+    criar_vinculo,
     usar_rede_sme,
 )
 
@@ -40,6 +40,7 @@ _LOGIN = "9999001"
 _ANO = 2026
 
 _BASE = "/api/abrangencia"
+_ROTA_DADOS_FUNCIONAIS = "dados-funcionais-autenticacao-externa"
 
 _CHAVES_COMPACTA = {
     "login",
@@ -1036,6 +1037,7 @@ class TestRotasNovasExigemApiKey(SimpleTestCase):
             ("get", "estrutura-vigente/000100"),
             ("post", "estrutura-vigente"),
             ("get", "usuarios/7000001/dre-vigente"),
+            ("get", f"usuarios/7000001/{_ROTA_DADOS_FUNCIONAIS}"),
         ]
 
         for metodo, rota in chamadas:
@@ -1364,7 +1366,7 @@ class TestDreVigenteView(TestCase):
 
     def test_ca01_login_com_dre_responde_200(self) -> None:
         """Responde 200 com `login` e `dreCodigo`, e so essas chaves."""
-        criar_dre_vigente()
+        criar_vinculo()
 
         resposta = self._consultar("7000001")
 
@@ -1383,3 +1385,68 @@ class TestDreVigenteView(TestCase):
                     resposta.status_code, status.HTTP_204_NO_CONTENT
                 )
                 self.assertEqual(resposta.content, b"")
+
+
+@override_settings(API_KEY=_API_KEY, API_KEY_HEADER="X-API-Key")
+class TestDadosFuncionaisView(TestCase):
+    """Testes de `GET /usuarios/{codigo_rf}/dados-funcionais-...`"""
+
+    def setUp(self) -> None:
+        """Autentica o cliente."""
+        self.client = APIClient()
+        self.client.credentials(HTTP_X_API_KEY=_API_KEY)
+
+    def _consultar(self, codigo_rf: str) -> Any:
+        return self.client.get(
+            f"{_BASE}/usuarios/{codigo_rf}/{_ROTA_DADOS_FUNCIONAIS}"
+        )
+
+    def test_rf_com_vinculo_responde_o_contrato(self) -> None:
+        """Garante as chaves inclusive `cargosSobrePosto`."""
+        criar_vinculo(ue="000001")
+        criar_vinculo(
+            origem="CARGO_SOBREPOSTO",
+            cargo=2002,
+            ue="000002",
+            ue_nome="EMEI - OUTRA ESCOLA",
+        )
+
+        resposta = self._consultar("7000001")
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resposta.json(),
+            {
+                "cargos": [{"codigo": 1001, "nome": "CARGO FICTICIO"}],
+                "cargosSobrePosto": [
+                    {"codigo": 2002, "nome": "CARGO FICTICIO"}
+                ],
+                "unidadesLotacao": [
+                    {
+                        "codigo": "000001",
+                        "nomeUnidade": "EMEF - ESCOLA FICTICIA",
+                    }
+                ],
+                "unidadeExercicio": {
+                    "codigo": "000002",
+                    "nomeUnidade": "EMEI - OUTRA ESCOLA",
+                },
+            },
+        )
+
+    def test_rf_sem_vinculo_responde_200_com_nulos(self) -> None:
+        """Garante 200 com os quatro `null`, conforme o legado."""
+        for codigo_rf in ("7000009", "abc"):
+            with self.subTest(codigo_rf=codigo_rf):
+                resposta = self._consultar(codigo_rf)
+
+                self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+                self.assertEqual(
+                    resposta.json(),
+                    {
+                        "cargos": None,
+                        "cargosSobrePosto": None,
+                        "unidadesLotacao": None,
+                        "unidadeExercicio": None,
+                    },
+                )

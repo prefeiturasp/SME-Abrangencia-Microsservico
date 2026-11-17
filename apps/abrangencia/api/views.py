@@ -38,6 +38,7 @@ from apps.abrangencia.serializers import (
     AbrangenciaCompactaSerializer,
     BuscarUsuariosPerfisSerializer,
     CicloEnsinoSerializer,
+    DadosFuncionaisSerializer,
     DetalheErroSerializer,
     DreNomeAbreviacaoSerializer,
     DreVigenteUsuarioSerializer,
@@ -135,7 +136,7 @@ class DreVigenteView(APIView):
         operation_id="abrangencia_dre_vigente",
     )
     def get(self, _request: Request, login: str) -> Response:
-        """Retorna a DRE da lotação ativa do RF, ou 204 sem corpo."""
+        """Retorna a DRE da lotação ativa do RF."""
         dados = AbrangenciaService().dre_vigente(login)
         if dados is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -159,6 +160,30 @@ class _RedeSmeView(APIExternaView):
             )
             return resposta_indisponivel(self.dominio)
         return super().handle_exception(exc)
+
+
+class DadosFuncionaisView(APIView):
+    """Cargos e unidades do RF."""
+
+    @extend_schema(
+        tags=_TAG,
+        parameters=[
+            OpenApiParameter(
+                "codigo_rf",
+                str,
+                OpenApiParameter.PATH,
+                description="RF do servidor.",
+            )
+        ],
+        responses={
+            200: DadosFuncionaisSerializer,
+            401: DetalheErroSerializer,
+        },
+        operation_id="abrangencia_dados_funcionais_autenticacao_externa",
+    )
+    def get(self, _request: Request, codigo_rf: str) -> Response:
+        """Retorna cargos, sobrepostos, lotação e exercício do RF."""
+        return Response(AbrangenciaService().dados_funcionais(codigo_rf))
 
 
 class _CompactaBaseView(_RedeSmeView):
