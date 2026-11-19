@@ -11,7 +11,7 @@ Perfil ──────────► PerfilVinculoFuncional
 
 UsuarioPorPerfil (mv_abrangencia_usuarios_perfil)
 
-DreVigenteUsuario (usuario_abrangencia, origem LOTACAO_DRE_VIGENTE)
+VinculoFuncional (usuario_vinculo_funcional)
 
 Sistema ─────────► ParametroSistema
 ```
@@ -70,17 +70,28 @@ Materialized view `mv_abrangencia_usuarios_perfil`. Base do endpoint `perfis/usu
 | `ano_letivo` | Integer | Ano letivo (parte da PK composta). |
 | `ue_codigo` | Text | Código da UE (parte da PK composta). |
 
-## DreVigenteUsuario
+## VinculoFuncional
 
-Tabela `usuario_abrangencia`, só a origem `LOTACAO_DRE_VIGENTE`: Base do endpoint `usuarios/{login}/dre-vigente`. A origem não tem perfil e não passa pelas MVs.
+Tabela `usuario_vinculo_funcional`, carregada pelo `sme-airflow`: um vínculo do servidor por origem.
+
+Quando a unidade do vínculo é a própria DRE, `ue_codigo` e `ue_nome` vêm nulos e a unidade fica só em `dre_codigo` e `dre_nome`.
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `usuario_abrangencia_id` | BigInteger | PK |
-| `login` | Text | RF do servidor. |
-| `ano_letivo` | Integer | Ano letivo. |
-| `dre_codigo` | Text | Código EOL da DRE vigente. |
-| `origem` | Text | `LOTACAO_DRE_VIGENTE`. |
+| `ano_letivo` | Integer | Ano da carga. |
+| `login` | Varchar(50) | RF do servidor. |
+| `origem` | Varchar(30) | `CARGO_BASE`, `CARGO_SOBREPOSTO`, `ATRIBUICAO_AULA` ou `FUNCAO_ATIVIDADE`. |
+| `cargo_base_servidor` | BigInteger | Cargo base do servidor no EOL. |
+| `lotacao_servidor` | BigInteger | Lotação do cargo base; só em `CARGO_BASE`. |
+| `cargo_codigo` | Integer | Código do cargo; em `CARGO_SOBREPOSTO`, o sobreposto. |
+| `cargo_nome` | Text | Nome do cargo. |
+| `funcao_atividade_codigo` | Integer | Função-atividade; só em `FUNCAO_ATIVIDADE`. |
+| `funcao_atividade_nome` | Text | Nome da função-atividade. |
+| `dre_codigo` | Varchar(15) | DRE da unidade do vínculo; nulo fora de DRE. |
+| `dre_nome` | Text | Nome da DRE. |
+| `ue_codigo` | Varchar(15) | Unidade do vínculo; nulo quando ela é a própria DRE. |
+| `ue_tipo` | SmallInteger | `tp_unidade_educacao` da unidade: 1 escola, 3 unidade administrativa. |
+| `ue_nome` | Text | Nome da unidade como o legado devolve (`SIGLA - NOME` para escola); nulo quando ela é a própria DRE. |
 
 ## Sistema e ParametroSistema
 

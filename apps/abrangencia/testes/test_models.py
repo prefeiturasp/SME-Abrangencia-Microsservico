@@ -5,12 +5,12 @@ from django.test import TestCase
 
 from apps.abrangencia.models import (
     AbrangenciaResolvida,
-    DreVigenteUsuario,
     ParametroSistema,
     Perfil,
     PerfilVinculoFuncional,
     Sistema,
     UsuarioPorPerfil,
+    VinculoFuncional,
 )
 
 _PERFIL_GUID = "2e89cf10-e42b-476f-8673-2dfbeeee3cd0"
@@ -56,11 +56,11 @@ class TestModelosNaoGerenciados(TestCase):
             UsuarioPorPerfil._meta.db_table, "mv_abrangencia_usuarios_perfil"
         )
 
-    def test_dre_vigente_usuario_le_a_tabela_de_escopo(self) -> None:
-        """`DreVigenteUsuario` lê `usuario_abrangencia`."""
-        self.assertFalse(DreVigenteUsuario._meta.managed)
+    def test_vinculo_funcional_le_a_tabela_do_pipeline(self) -> None:
+        """`VinculoFuncional` lê `usuario_vinculo_funcional`."""
+        self.assertFalse(VinculoFuncional._meta.managed)
         self.assertEqual(
-            DreVigenteUsuario._meta.db_table, "usuario_abrangencia"
+            VinculoFuncional._meta.db_table, "usuario_vinculo_funcional"
         )
 
 
@@ -99,15 +99,15 @@ class TestRepresentacaoDosModelos(TestCase):
         )
 
         self.assertEqual(str(sistema), "1000 - Novo SGP")
-        self.assertEqual(
-            str(parametro), "1000 - tipos_escola_exibidos - 2026"
+        self.assertEqual(str(parametro), "1000 - tipos_escola_exibidos - 2026")
+
+    def test_vinculo_funcional(self) -> None:
+        """Vínculo do servidor exibe login, origem e UE."""
+        linha = VinculoFuncional(
+            login="7000001", origem="CARGO_BASE", ue_codigo="000001"
         )
 
-    def test_dre_vigente_usuario(self) -> None:
-        """DRE vigente exibe login e DRE."""
-        linha = DreVigenteUsuario(login="7000001", dre_codigo="100000")
-
-        self.assertEqual(str(linha), "7000001 - 100000")
+        self.assertEqual(str(linha), "7000001 - CARGO_BASE - 000001")
 
     def test_usuario_por_perfil(self) -> None:
         """Usuário por perfil exibe usuário, perfil e UE."""

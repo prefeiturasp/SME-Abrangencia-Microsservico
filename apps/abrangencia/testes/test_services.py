@@ -15,8 +15,8 @@ from apps.abrangencia.services import (
     PerfilInexistenteError,
 )
 from apps.abrangencia.testes.helpers import (
-    criar_dre_vigente,
     criar_escopo,
+    criar_vinculo,
     usar_rede_sme,
 )
 
@@ -896,7 +896,7 @@ class TestDreVigente(TestCase):
 
     def test_linha_encontrada_devolve_login_recebido_e_dre(self) -> None:
         """Devolve `login` e `dreCodigo`."""
-        criar_dre_vigente()
+        criar_vinculo()
 
         with self.assertNumQueries(1):
             resultado = self.service.dre_vigente("7000001")
@@ -906,10 +906,10 @@ class TestDreVigente(TestCase):
         )
 
     def test_sem_dre_vigente_devolve_none(self) -> None:
-        """Garante None sem linha da origem ou com `dre_codigo` nulo."""
-        criar_dre_vigente("7000001", origem="LOTACAO_CARGO")
-        criar_dre_vigente("7000002", dre=None)
-        criar_dre_vigente("7000003")
+        """Garante None sem linha `CARGO_BASE` ou com `dre_codigo` nulo."""
+        criar_vinculo("7000001", origem="CARGO_SOBREPOSTO")
+        criar_vinculo("7000002", dre=None)
+        criar_vinculo("7000003")
 
         for login in ("7000009", "7000001", "7000002", " 7000003"):
             with self.subTest(login=login):
@@ -917,7 +917,7 @@ class TestDreVigente(TestCase):
 
     def test_espaco_a_direita_e_ignorado(self) -> None:
         """Garante que o RF sem os espacos."""
-        criar_dre_vigente()
+        criar_vinculo()
 
         resultado = self.service.dre_vigente("7000001 ")
 
@@ -925,13 +925,169 @@ class TestDreVigente(TestCase):
             resultado, {"login": "7000001 ", "dreCodigo": "100000"}
         )
 
-    def test_dois_anos_devolve_o_maior(self) -> None:
-        """Sem filtro de ano, retorna o maior."""
-        criar_dre_vigente(ano=2025, dre="100000")
-        criar_dre_vigente(ano=2026, dre="200000")
+    def test_escolha_entre_cargos_e_lotacoes(self) -> None:
+        """Garante o menor cargo base e, nele, a menor lotacao."""
+        criar_vinculo("7000001", cargo_base=2, dre="200000", ue="000002")
+        criar_vinculo("7000001", cargo_base=1, dre="100000", ue="000001")
+        criar_vinculo("7000002", lotacao=9, dre="900000", ue="000009")
+        criar_vinculo(
+            "7000002", lotacao=3, cargo=1002, dre="300000", ue="000003"
+        )
+        criar_vinculo("7000003", cargo_base=1, dre=None, ue="000001")
+        criar_vinculo("7000003", cargo_base=2, dre="200000", ue="000002")
 
-        resultado = self.service.dre_vigente("7000001")
+        for login, dre in (
+            ("7000001", "100000"),
+            ("7000002", "300000"),
+            ("7000003", "200000"),
+        ):
+            with self.subTest(login=login):
+                self.assertEqual(
+                    self.service.dre_vigente(login),
+                    {"login": login, "dreCodigo": dre},
+                )
+
+
+class TestDadosFuncionais(TestCase):
+    """Testes de `AbrangenciaService.dados_funcionais`."""
+
+    def setUp(self) -> None:
+        """Instancia o servico."""
+        self.service = AbrangenciaService()
+
+    def test_quatro_campos_por_origem(self) -> None:
+        """Garante cada origem no seu campo."""
+        criar_vinculo(cargo=1001, nome="CARGO A", ue="000001", ue_nome="A")
+        criar_vinculo(
+            origem="ATRIBUICAO_AULA", cargo=1002, ue="000002", ue_nome="B"
+        )
+        criar_vinculo(
+            origem="CARGO_SOBREPOSTO", cargo=2001, ue="000003", ue_nome="C"
+        )
+        criar_vinculo(
+            origem="FUNCAO_ATIVIDADE", cargo=1003, ue="000004", ue_nome="D"
+        )
+
+        with self.assertNumQueries(1):
+            dados = self.service.dados_funcionais("7000001 ")
 
         self.assertEqual(
-            resultado, {"login": "7000001", "dreCodigo": "200000"}
+            dados,
+            {
+                "cargos": [
+                    {"codigo": 1001, "nome": "CARGO A"},
+                    {"codigo": 1002, "nome": "CARGO FICTICIO"},
+                    {"codigo": 1003, "nome": "CARGO FICTICIO"},
+                ],
+                "cargosSobrePosto": [
+                    {"codigo": 2001, "nome": "CARGO FICTICIO"}
+                ],
+                "unidadesLotacao": [
+                    {"codigo": "000001", "nomeUnidade": "A"},
+                    {"codigo": "000002", "nomeUnidade": "B"},
+                ],
+                "unidadeExercicio": {"codigo": "000003", "nomeUnidade": "C"},
+            },
         )
+
+    def test_sem_vinculo_devolve_nulos(self) -> None:
+        """Garante os quatro campos `None`, conforme o legado."""
+        self.assertEqual(
+            self.service.dados_funcionais("7000009"),
+            {
+                "cargos": None,
+                "cargosSobrePosto": None,
+                "unidadesLotacao": None,
+                "unidadeExercicio": None,
+            },
+        )
+
+    def test_unidade_que_e_a_propria_dre(self) -> None:
+        """Garante codigo e nome da DRE quando o vinculo nao tem UE."""
+        criar_vinculo(dre="100000", dre_nome="DRE X", ue=None, ue_nome=None)
+        criar_vinculo(
+            origem="FUNCAO_ATIVIDADE",
+            dre="100000",
+            dre_nome="DRE X",
+            ue=None,
+            ue_nome=None,
+        )
+
+        dados = self.service.dados_funcionais("7000001")
+
+        unidade = {"codigo": "100000", "nomeUnidade": "DRE X"}
+        self.assertEqual(dados["unidadesLotacao"], [unidade])
+        self.assertEqual(dados["unidadeExercicio"], unidade)
+
+    def test_ordem_e_repeticao_como_no_legado(self) -> None:
+        """Garante cargos por codigo e lotacao na ordem do legado."""
+        criar_vinculo(cargo_base=2, cargo=1002, ue="000003")
+        criar_vinculo(
+            origem="ATRIBUICAO_AULA", cargo_base=2, cargo=1002, ue="000001"
+        )
+        criar_vinculo(cargo_base=1, cargo=1001, ue="000002")
+        criar_vinculo(origem="ATRIBUICAO_AULA", cargo=1001, ue="000001")
+
+        dados = self.service.dados_funcionais("7000001")
+
+        self.assertEqual(
+            [cargo["codigo"] for cargo in dados["cargos"]], [1001, 1002]
+        )
+        self.assertEqual(
+            [ue["codigo"] for ue in dados["unidadesLotacao"]],
+            ["000002", "000001", "000003"],
+        )
+
+    def test_unidade_sem_nome(self) -> None:
+        """Garante `[]` na lotacao e `None` no exercicio sem nome."""
+        criar_vinculo(ue="000001", ue_nome=None)
+        criar_vinculo(origem="FUNCAO_ATIVIDADE", ue="000002", ue_nome=None)
+
+        dados = self.service.dados_funcionais("7000001")
+
+        self.assertEqual(dados["unidadesLotacao"], [])
+        self.assertIsNone(dados["unidadeExercicio"])
+
+    def test_escolha_da_unidade_de_exercicio(self) -> None:
+        """Garante menor cargo base, sobreposto antes de funcao e menor UE."""
+        cenarios = [
+            (
+                "menor cargo base",
+                "000009",
+                [
+                    ("FUNCAO_ATIVIDADE", 1, "000009"),
+                    ("CARGO_SOBREPOSTO", 2, "000001"),
+                ],
+            ),
+            (
+                "sobreposto antes de funcao",
+                "000009",
+                [
+                    ("FUNCAO_ATIVIDADE", 1, "000001"),
+                    ("CARGO_SOBREPOSTO", 1, "000009"),
+                ],
+            ),
+            (
+                "menor unidade",
+                "000001",
+                [
+                    ("FUNCAO_ATIVIDADE", 1, "000009"),
+                    ("FUNCAO_ATIVIDADE", 1, "000001"),
+                ],
+            ),
+        ]
+
+        for indice, (caso, esperado, linhas) in enumerate(cenarios):
+            login = f"700000{indice}"
+            for cargo, (origem, cargo_base, ue) in enumerate(linhas, 1001):
+                criar_vinculo(
+                    login,
+                    origem=origem,
+                    cargo_base=cargo_base,
+                    cargo=cargo,
+                    ue=ue,
+                )
+            with self.subTest(caso=caso):
+                dados = self.service.dados_funcionais(login)
+
+                self.assertEqual(dados["unidadeExercicio"]["codigo"], esperado)

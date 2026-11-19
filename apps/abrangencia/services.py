@@ -7,6 +7,9 @@ from django.conf import settings
 
 from apps.abrangencia.constants import (
     GRUPO_COMUNICADOS_UE,
+    ORIGEM_ATRIBUICAO_AULA,
+    ORIGEM_CARGO_BASE,
+    ORIGEM_CARGO_SOBREPOSTO,
     ORIGENS_UE_POR_EXERCICIO,
     TIPO_RESOLUCAO_COMPACTA,
     TIPO_RESOLUCAO_DETALHES,
@@ -14,10 +17,10 @@ from apps.abrangencia.constants import (
 )
 from apps.abrangencia.models import (
     AbrangenciaResolvida,
-    DreVigenteUsuario,
     Perfil,
     PerfilVinculoFuncional,
     UsuarioPorPerfil,
+    VinculoFuncional,
 )
 from apps.abrangencia.rede_sme import RedeSme, obter_rede_sme
 
@@ -33,6 +36,8 @@ _NIVEIS_VAZIOS_POR_TIPO_ABRANGENCIA: dict[int, frozenset[str]] = {
 _NIVEIS_VAZIOS_DRE_NAO_MANUAL = frozenset({"idDres"})
 
 _ORIGEM_CONTRATO_EXTERNO = "CONTRATO_EXTERNO"
+
+_ORIGENS_LOTACAO = frozenset({ORIGEM_CARGO_BASE, ORIGEM_ATRIBUICAO_AULA})
 
 
 _NIVEIS_VAZIOS_DETALHES: dict[int, frozenset[str]] = {
@@ -133,14 +138,73 @@ class AbrangenciaService:
             `login` e `dreCodigo`, ou None sem linha ou sem DRE.
         """
         dre = (
-            DreVigenteUsuario.objects.filter(login=login.rstrip(" "))
-            .order_by("-ano_letivo")
+            VinculoFuncional.objects.filter(
+                login=login.rstrip(" "),
+                origem=ORIGEM_CARGO_BASE,
+                dre_codigo__isnull=False,
+            )
+            .order_by("cargo_base_servidor", "lotacao_servidor")
             .values_list("dre_codigo", flat=True)
             .first()
         )
         if dre is None:
             return None
         return {"login": login, "dreCodigo": dre}
+
+    def dados_funcionais(self, login: str) -> dict[str, Any]:
+        """Monta cargos e unidades do servidor.
+
+        Args:
+            login: RF do servidor.
+
+        Returns:
+            `cargos`, `cargosSobrePosto`, `unidadesLotacao` e
+            `unidadeExercicio`; sem vinculo, os quatro `None`. Cargos
+            ordenados por codigo; unidades de lotacao na ordem de
+            `_ordem_lotacao`. Sem repeticao; unidade sem nome fica de fora.
+        """
+        linhas = VinculoFuncional.objects.filter(
+            login=login.rstrip(" ")
+        ).values_list(
+            "origem",
+            "cargo_base_servidor",
+            "cargo_codigo",
+            "cargo_nome",
+            "ue_codigo",
+            "ue_nome",
+            "dre_codigo",
+            "dre_nome",
+        )
+        cargos: dict[int, str] = {}
+        sobrepostos: dict[int, str] = {}
+        lotacao: list[tuple[tuple[int, int, int, str], str, str | None]] = []
+        candidatos: list[tuple[int, int, str, str | None]] = []
+        for origem, cargo_base, cargo, cargo_nome, *unidade in linhas:
+            sobreposto = origem == ORIGEM_CARGO_SOBREPOSTO
+            (sobrepostos if sobreposto else cargos).setdefault(
+                cargo, cargo_nome
+            )
+            codigo, nome = _unidade_do_vinculo(*unidade)
+            if codigo is None:
+                continue
+            if origem in _ORIGENS_LOTACAO:
+                ordem = _ordem_lotacao(origem, cargo, cargo_base, codigo)
+                lotacao.append((ordem, codigo, nome))
+            else:
+                candidatos.append(
+                    (cargo_base, int(not sobreposto), codigo, nome)
+                )
+        exercicio = min(candidatos, key=lambda c: c[:3], default=None)
+        return {
+            "cargos": _cargos(cargos),
+            "cargosSobrePosto": _cargos(sobrepostos),
+            "unidadesLotacao": _unidades_lotacao(lotacao) if lotacao else None,
+            "unidadeExercicio": (
+                {"codigo": exercicio[2], "nomeUnidade": exercicio[3]}
+                if exercicio and exercicio[3]
+                else None
+            ),
+        }
 
     def abrangencia_compacta(
         self,
@@ -817,6 +881,51 @@ class AbrangenciaService:
             }
             for (login, perfil_guid), ues in sorted(agrupado.items())
         ]
+
+
+def _unidade_do_vinculo(
+    ue: str | None,
+    ue_nome: str | None,
+    dre: str | None,
+    dre_nome: str | None,
+) -> tuple[str | None, str | None]:
+    """Devolve codigo e nome da unidade; sem UE, a unidade e a propria DRE."""
+    return (ue, ue_nome) if ue else (dre, dre_nome)
+
+
+def _ordem_lotacao(
+    origem: str, cargo: int, cargo_base: int, codigo: str
+) -> tuple[int, int, int, str]:
+    """Chave de ordem de uma unidade de lotacao, como o legado a devolve.
+
+    O legado nao tem `ORDER BY`: a ordem sai do `GROUP BY` de
+    `BuscarCargosEAtividadesServidorIntranet`, por cargo e, nele, a linha
+    sem componente (cargo base) antes da atribuicao.
+    """
+    return (cargo, int(origem != ORIGEM_CARGO_BASE), cargo_base, codigo)
+
+
+def _unidades_lotacao(
+    linhas: list[tuple[tuple[int, int, int, str], str, str | None]],
+) -> list[dict[str, str]]:
+    """Ordena as unidades e mantem a primeira de cada codigo, com nome."""
+    unidades: dict[str, str | None] = {}
+    for _, codigo, nome in sorted(linhas, key=lambda linha: linha[0]):
+        unidades.setdefault(codigo, nome)
+    return [
+        {"codigo": codigo, "nomeUnidade": nome}
+        for codigo, nome in unidades.items()
+        if nome
+    ]
+
+
+def _cargos(cargos: dict[int, str]) -> list[dict[str, Any]] | None:
+    """Ordena os cargos por codigo, com None quando nao ha nenhum."""
+    if not cargos:
+        return None
+    return [
+        {"codigo": codigo, "nome": cargos[codigo]} for codigo in sorted(cargos)
+    ]
 
 
 def _ue_expandida(codigo: str, ue: Mapping[str, Any]) -> dict[str, Any]:

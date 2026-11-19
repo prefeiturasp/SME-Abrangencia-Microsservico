@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 from apps.abrangencia.serializers import (
     AbrangenciaCompactaSerializer,
     BuscarUsuariosPerfisSerializer,
+    DadosFuncionaisSerializer,
     DreVigenteUsuarioSerializer,
     GrupoCargosSerializer,
     UsuarioPerfilsAbrangenciaSerializer,
@@ -129,3 +130,21 @@ class TestDreVigenteUsuarioSerializer(SimpleTestCase):
         serializer = DreVigenteUsuarioSerializer()
 
         self.assertEqual(set(serializer.fields), {"login", "dreCodigo"})
+
+
+class TestDadosFuncionaisSerializer(SimpleTestCase):
+    """Testes de `DadosFuncionaisSerializer`."""
+
+    def test_campos_exatos(self) -> None:
+        """Exibe as quatro chaves conforme o legado."""
+        serializer = DadosFuncionaisSerializer()
+
+        self.assertEqual(
+            set(serializer.fields),
+            {
+                "cargos",
+                "cargosSobrePosto",
+                "unidadesLotacao",
+                "unidadeExercicio",
+            },
+        )
